@@ -5,8 +5,8 @@ WORKDIR /app
 # Install OpenSSL for Prisma
 RUN apt-get update -y && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
 
-COPY package.json package-lock.json ./
-RUN npm ci --ignore-scripts
+COPY package.json ./
+RUN npm install --ignore-scripts
 
 COPY prisma ./prisma
 RUN npx prisma generate
@@ -21,8 +21,8 @@ WORKDIR /app
 
 RUN apt-get update -y && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
 
-COPY package.json package-lock.json ./
-RUN npm ci --omit=dev --ignore-scripts
+COPY package.json ./
+RUN npm install --omit=dev --ignore-scripts
 
 COPY prisma ./prisma
 RUN npx prisma generate
