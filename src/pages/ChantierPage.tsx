@@ -3,7 +3,7 @@ import { api, isApiEnabled, ApiAssignment, ApiTimeEntrySummary } from '@/lib/api
 import { Assignment } from '@/types/planning';
 import { usePlanningData } from '@/hooks/usePlanningData';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, HardHat, Search, Calendar, Users, Factory, TrendingUp, Clock, ChevronLeft, ChevronRight, DollarSign, Briefcase, UserCheck } from 'lucide-react';
+import { ArrowLeft, HardHat, Search, Calendar, Users, Factory, TrendingUp, Clock, ChevronLeft, ChevronRight, Briefcase, UserCheck } from 'lucide-react';
 import { Project, ProjectStatus, PROJECT_STATUS_LABELS, PROJECT_STATUS_COLORS, SLOT_LABELS } from '@/types/planning';
 import { SubsidiarySelector } from '@/components/planning/SubsidiarySelector';
 import { WorkshopSelector } from '@/components/planning/WorkshopSelector';
@@ -275,19 +275,13 @@ export const ChantierPage = () => {
                 </div>
 
                 {/* Info badges */}
-                {(selectedProject.is_interne || selectedProject.is_soldee || selectedProject.montant_vente) && (
+                {(selectedProject.is_interne || selectedProject.is_soldee) && (
                   <div className="flex items-center gap-2 mt-3">
                     {selectedProject.is_interne && (
                       <span className="text-[10px] px-2 py-0.5 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-full font-bold">Commande interne</span>
                     )}
                     {selectedProject.is_soldee && (
                       <span className="text-[10px] px-2 py-0.5 bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 rounded-full font-bold">Soldée</span>
-                    )}
-                    {selectedProject.montant_vente != null && selectedProject.montant_vente > 0 && (
-                      <span className="flex items-center gap-1 text-[10px] px-2 py-0.5 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 rounded-full font-bold">
-                        <DollarSign className="w-3 h-3" />
-                        {selectedProject.montant_vente.toLocaleString('fr-FR', { maximumFractionDigits: 0 })} €
-                      </span>
                     )}
                   </div>
                 )}
