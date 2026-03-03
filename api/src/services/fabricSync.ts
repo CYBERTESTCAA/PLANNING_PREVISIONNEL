@@ -122,19 +122,29 @@ async function getFabricPool(): Promise<sql.ConnectionPool> {
     process.env.FABRIC_CLIENT_ID!,
     process.env.FABRIC_CLIENT_SECRET!,
   );
+  console.log('[sync] Acquiring OAuth token for Fabric SQL…');
   const tokenResponse = await credential.getToken(
-    'https://analysis.windows.net/powerbi/api/.default',
+    'https://database.windows.net/.default',
   );
+  console.log('[sync] Token acquired, connecting to SQL endpoint:', process.env.FABRIC_SQL_ENDPOINT);
   const config: sql.config = {
     server: process.env.FABRIC_SQL_ENDPOINT!,
+    port: 1433,
     database: process.env.FABRIC_DATABASE!,
     authentication: {
       type: 'azure-active-directory-access-token',
       options: { token: tokenResponse.token },
     },
-    options: { encrypt: true, trustServerCertificate: false },
+    options: {
+      encrypt: true,
+      trustServerCertificate: false,
+      connectTimeout: 30000,
+      requestTimeout: 60000,
+    },
   };
-  return sql.connect(config);
+  const pool = await sql.connect(config);
+  console.log('[sync] Connected to Fabric SQL.');
+  return pool;
 }
 
 // ─── Résultat de synchro ──────────────────────────────────────────────────────
