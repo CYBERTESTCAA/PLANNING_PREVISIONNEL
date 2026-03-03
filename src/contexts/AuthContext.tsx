@@ -27,10 +27,15 @@ const AuthContext = createContext<AuthState>({
 export const useAuth = () => useContext(AuthContext);
 
 let msalInstance: PublicClientApplication | null = null;
+let msalReady: Promise<void> | null = null;
 const isSecure = window.isSecureContext || location.hostname === 'localhost' || location.hostname === '127.0.0.1';
 if (msalEnabled && isSecure) {
   try {
     msalInstance = new PublicClientApplication(msalConfig);
+    // Initialize MSAL and handle redirect/popup responses before app renders
+    msalReady = msalInstance.initialize().then(() => {
+      return msalInstance!.handleRedirectPromise().then(() => {});
+    });
   } catch (err) {
     console.warn('[Auth] MSAL init failed (non-secure context?):', err);
     msalInstance = null;
