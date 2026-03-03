@@ -27,8 +27,16 @@ const AuthContext = createContext<AuthState>({
 export const useAuth = () => useContext(AuthContext);
 
 let msalInstance: PublicClientApplication | null = null;
-if (msalEnabled) {
-  msalInstance = new PublicClientApplication(msalConfig);
+const isSecure = window.isSecureContext || location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+if (msalEnabled && isSecure) {
+  try {
+    msalInstance = new PublicClientApplication(msalConfig);
+  } catch (err) {
+    console.warn('[Auth] MSAL init failed (non-secure context?):', err);
+    msalInstance = null;
+  }
+} else if (msalEnabled && !isSecure) {
+  console.warn('[Auth] MSAL désactivé : contexte non sécurisé (HTTP). L\'authentification nécessite HTTPS.');
 }
 
 function AuthInner({ children }: { children: ReactNode }) {
@@ -117,13 +125,16 @@ function AuthInner({ children }: { children: ReactNode }) {
 }
 
 function NoAuthProvider({ children }: { children: ReactNode }) {
+  // If MSAL is configured but unavailable (non-secure context), stay read-only
+  // If MSAL is not configured at all, allow everything (dev mode)
+  const devMode = !msalEnabled;
   return (
     <AuthContext.Provider value={{
       isAuthenticated: false,
-      isAdmin: true, // No auth configured → allow everything (dev mode)
+      isAdmin: devMode,
       userName: '',
       userEmail: '',
-      login: async () => { console.warn('[Auth] MSAL not configured'); },
+      login: async () => { console.warn('[Auth] MSAL not configured or non-secure context'); },
       logout: () => {},
       getAccessToken: async () => null,
     }}>
