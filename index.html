@@ -4,9 +4,9 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <!-- TODO: Set the document title to the name of your application -->
-    <title>Lovable App</title>
-    <meta name="description" content="Lovable Generated Project" />
-    <meta name="author" content="Lovable" />
+    <title>Planning Prévisionnel</title>
+    <meta name="description" content="Planning prévisionnel - Gestion des affectations" />
+    <meta name="author" content="CAA" />
 
     <!-- TODO: Update og:title to match your application name -->
     <meta property="og:title" content="Lovable App" />
@@ -21,6 +21,16 @@
 
   <body>
     <div id="root"></div>
+    <script>
+      // Polyfill crypto.randomUUID for non-secure contexts (HTTP on LAN)
+      if (typeof crypto !== 'undefined' && !crypto.randomUUID) {
+        crypto.randomUUID = function() {
+          return '10000000-1000-4000-8000-100000000000'.replace(/[018]/g, function(c) {
+            return (c ^ (crypto.getRandomValues(new Uint8Array(1))[0] & (15 >> (c / 4)))).toString(16);
+          });
+        };
+      }
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
