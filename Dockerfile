@@ -2,9 +2,9 @@
 FROM node:20-slim AS builder
 WORKDIR /app
 
-COPY package.json package-lock.json ./
+COPY package.json package-lock.json* ./
 # Install root dependencies (frontend)
-RUN npm ci --ignore-scripts
+RUN npm install --ignore-scripts
 
 COPY index.html tsconfig.json tsconfig.app.json tsconfig.node.json vite.config.ts tailwind.config.ts postcss.config.js components.json ./
 COPY src ./src
