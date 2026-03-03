@@ -1,0 +1,130 @@
+/* FullCalendar custom styling */
+.fc {
+  --fc-border-color: hsl(var(--border));
+  --fc-button-text-color: hsl(var(--foreground));
+  --fc-button-bg-color: hsl(var(--secondary));
+  --fc-button-border-color: hsl(var(--border));
+  --fc-button-hover-bg-color: hsl(var(--accent));
+  --fc-button-hover-border-color: hsl(var(--border));
+  --fc-button-active-bg-color: hsl(var(--primary));
+  --fc-button-active-border-color: hsl(var(--primary));
+  --fc-today-bg-color: hsl(var(--accent) / 0.5);
+  --fc-page-bg-color: hsl(var(--card));
+  --fc-neutral-bg-color: hsl(var(--muted));
+  --fc-list-event-hover-bg-color: hsl(var(--accent));
+  --fc-highlight-color: hsl(var(--accent) / 0.3);
+  --fc-non-business-color: hsl(var(--muted) / 0.3);
+}
+
+.fc .fc-toolbar-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: hsl(var(--foreground));
+  text-transform: capitalize;
+}
+
+.fc .fc-button {
+  font-weight: 500;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  transition: all 0.15s ease;
+}
+
+.fc .fc-button:focus {
+  box-shadow: 0 0 0 2px hsl(var(--primary) / 0.3);
+}
+
+.fc .fc-button-primary:not(:disabled).fc-button-active,
+.fc .fc-button-primary:not(:disabled):active {
+  background-color: hsl(var(--primary));
+  border-color: hsl(var(--primary));
+  color: hsl(var(--primary-foreground));
+}
+
+.fc .fc-daygrid-day-number {
+  padding: 8px;
+  font-weight: 500;
+  color: hsl(var(--foreground));
+}
+
+.fc .fc-col-header-cell-cushion {
+  padding: 8px;
+  font-weight: 600;
+  color: hsl(var(--foreground));
+  text-transform: capitalize;
+}
+
+.fc .fc-event {
+  border-radius: 4px;
+  font-size: 0.75rem;
+  padding: 2px 4px;
+  border: none;
+  cursor: pointer;
+}
+
+.fc .fc-event-title {
+  font-weight: 500;
+}
+
+.fc .fc-daygrid-event-dot {
+  display: none;
+}
+
+.fc .fc-timegrid-slot-label {
+  font-size: 0.75rem;
+  color: hsl(var(--muted-foreground));
+}
+
+.fc .fc-timegrid-axis-cushion {
+  font-size: 0.75rem;
+  color: hsl(var(--muted-foreground));
+}
+
+.fc .fc-scrollgrid {
+  border-radius: 0.5rem;
+  overflow: hidden;
+}
+
+.fc .fc-multimonth {
+  border: none;
+}
+
+.fc .fc-multimonth-month {
+  padding: 1rem;
+}
+
+.fc .fc-multimonth-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: hsl(var(--foreground));
+  text-transform: capitalize;
+  padding: 0.5rem;
+}
+
+.fc .fc-more-link {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: hsl(var(--primary));
+}
+
+.fc .fc-popover {
+  background: hsl(var(--card));
+  border: 1px solid hsl(var(--border));
+  border-radius: 0.5rem;
+  box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+}
+
+.fc .fc-popover-header {
+  background: hsl(var(--muted));
+  padding: 0.5rem;
+  font-weight: 600;
+}
+
+.fc-theme-standard td,
+.fc-theme-standard th {
+  border-color: hsl(var(--border));
+}
+
+.fc-theme-standard .fc-scrollgrid {
+  border-color: hsl(var(--border));
+}

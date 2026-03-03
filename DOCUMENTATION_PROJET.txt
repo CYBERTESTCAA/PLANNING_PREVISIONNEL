@@ -1,0 +1,753 @@
+================================================================================
+  DOCUMENTATION COMPLÈTE — SHIFTWISE PLANNER (Planning Prévisionnel)
+  Dernière mise à jour : Février 2026
+================================================================================
+
+
+1. VUE D'ENSEMBLE
+─────────────────
+Nom du projet  : ShiftWise Planner
+Type           : Application web interne de gestion de planning d'ateliers
+Objectif       : Planifier les affectations d'employés sur des chantiers,
+                 gérer les absences, suivre l'avancement des commandes,
+                 synchroniser les données depuis Microsoft Fabric (ERP cloud).
+Architecture   : Monorepo npm workspaces — 2 projets séparés
+  Frontend     : React (port 8080)
+  Backend      : API REST Node.js (port 3001)
+  Base de données : SQLite locale (fichier dev.db dans api/)
+
+
+2. STACK TECHNIQUE COMPLÈTE
+────────────────────────────
+
+FRONTEND (dossier racine / src/)
+  Langage        : TypeScript 5
+  Framework      : React 18
+  Bundler        : Vite 5 (@vitejs/plugin-react-swc)
+  Styles         : TailwindCSS 3 + tailwind-merge + tailwindcss-animate
+  Composants UI  : shadcn/ui + Radix UI (accordion, dialog, select, tooltip, etc.)
+  Animations     : Framer Motion v12
+  Icônes         : Lucide React v0.462
+  Routing        : React Router DOM v6
+  État global    : React Context API (PlanningStoreContext maison)
+  Dates          : date-fns v3
+  Calendrier     : FullCalendar v6 (daygrid, timegrid, interaction, multimonth)
+  Graphiques     : Recharts v2
+  Export Excel   : xlsx v0.18
+  Export PDF     : jsPDF v4 + jspdf-autotable v5
+  Notifications  : Sonner (toasts)
+  Formulaires    : React Hook Form v7 + Zod v3
+  Palette cmds   : cmdk v1
+  Query          : @tanstack/react-query v5
+  Tests          : Vitest v3 + Testing Library
+
+BACKEND (dossier api/)
+  Langage        : TypeScript 5
+  Runtime        : Node.js (ESM modules)
+  Framework HTTP : Fastify v5
+  CORS           : @fastify/cors v10
+  ORM            : Prisma v6 (@prisma/client)
+  Base de données: SQLite (fichier local via Prisma)
+  Validation     : Zod v3
+  Connexion ERP  : mssql v12 (SQL Server / Microsoft Fabric)
+  Auth Azure     : @azure/identity v4 (ClientSecretCredential)
+  Tâches cron    : node-cron v4 (sync auto toutes les heures)
+  Config env     : dotenv v16
+  Dev runner     : tsx v4 (exécution TS sans build en dev)
+
+
+3. STRUCTURE DES DOSSIERS
+──────────────────────────
+
+shiftwise-planner-main/
+├── package.json                       ← Racine, npm workspaces ["api"]
+├── .env                               ← VITE_API_URL=http://localhost:3001
+├── .env.example                       ← Template variables frontend
+├── vite.config.ts
+├── tailwind.config.ts
+├── tsconfig.json
+│
+├── src/
+│   ├── App.tsx                        ← Routes React Router
+│   ├── main.tsx
+│   │
+│   ├── pages/
+│   │   ├── Index.tsx                  ← Accueil / tableau de bord
+│   │   ├── PlanningPage.tsx           ← Grille planning hebdomadaire
+│   │   ├── GanttPage.tsx              ← Vue Gantt (3 couches)
+│   │   ├── ChantierPage.tsx           ← Vue détail chantier
+│   │   ├── PersonCalendarPage.tsx     ← Calendrier individuel employé
+│   │   └── admin/
+│   │       ├── AdminTeamsPage.tsx     ← Gestion des ateliers (workshops)
+│   │       ├── AdminPeoplePage.tsx    ← Gestion du personnel
+│   │       ├── AdminProjectsPage.tsx  ← Gestion des chantiers/projets
+│   │       ├── AdminSubsidiariesPage.tsx ← Filiales et ateliers
+│   │       └── AdminSyncPage.tsx      ← Sync Fabric (déclenchement manuel)
+│   │
+│   ├── components/
+│   │   ├── planning/
+│   │   │   ├── PlanningGrid.tsx       ← Tableau grille (cœur du planning)
+│   │   │   ├── DayCell.tsx            ← Cellule AM/PM clickable
+│   │   │   ├── PersonRow.tsx          ← Ligne d'un employé dans la grille
+│   │   │   ├── AssignmentModal.tsx    ← Modal : chantier + OF + slot + temps
+│   │   │   ├── WorkshopSelector.tsx   ← Sélecteur d'atelier
+│   │   │   ├── SubsidiarySelector.tsx ← Sélecteur de filiale
+│   │   │   ├── ProjectGantt.tsx       ← Gantt 3 couches
+│   │   │   ├── CommandPalette.tsx     ← Palette (Ctrl+K)
+│   │   │   ├── BulkActionBar.tsx      ← Barre actions groupées
+│   │   │   ├── ContextMenu.tsx        ← Menu clic droit
+│   │   │   ├── ActivityLog.tsx        ← Journal d'activité
+│   │   │   ├── ChangeRequestPanel.tsx ← Panel demandes de validation
+│   │   │   └── TaskResponseDialog.tsx ← Réponse à une tâche
+│   │   └── ui/                        ← Composants shadcn/ui générés
+│   │
+│   ├── contexts/
+│   │   └── PlanningStoreContext.tsx   ← Store global React Context
+│   │
+│   ├── hooks/
+│   │   ├── usePlanningData.ts         ← Hook principal (données + actions dérivées)
+│   │   ├── useDateNavigation.ts       ← Navigation semaine / mois / jour
+│   │   └── useUndoRedo.ts             ← Annuler / Rétablir
+│   │
+│   ├── types/
+│   │   └── planning.ts                ← TOUS les types TypeScript du domaine
+│   │
+│   ├── lib/
+│   │   ├── api.ts                     ← Client HTTP typé (fetch vers backend)
+│   │   ├── dateUtils.ts               ← Utilitaires dates
+│   │   ├── planningUtils.ts           ← Construction données grille
+│   │   └── exportUtils.ts             ← Logique export Excel / PDF
+│   │
+│   └── data/
+│       └── mockData.ts                ← Données de démo (mode offline)
+│
+├── api/
+│   ├── package.json
+│   ├── .env                           ← Variables DB + Fabric (gitignored)
+│   ├── tsconfig.json
+│   │
+│   ├── src/
+│   │   ├── index.ts                   ← Serveur Fastify + routes inline
+│   │   ├── routes/
+│   │   │   ├── planning.ts            ← GET /planning (agrégat)
+│   │   │   ├── assignments.ts         ← CRUD affectations
+│   │   │   ├── absences.ts            ← CRUD absences
+│   │   │   ├── projects.ts            ← CRUD projets
+│   │   │   ├── manufacturing-orders.ts← CRUD ordres de fabrication
+│   │   │   ├── tasks.ts               ← CRUD tâches
+│   │   │   └── sync.ts                ← POST /sync/fabric
+│   │   └── services/
+│   │       └── fabricSync.ts          ← Logique synchronisation Fabric
+│   │
+│   └── prisma/
+│       ├── schema.prisma              ← Schéma BDD Prisma
+│       └── migrations/                ← Fichiers SQL de migration
+│
+└── ops/
+    └── rollback_sqlite.sh             ← Script rollback base de données
+
+
+4. BASE DE DONNÉES SQLITE — SCHÉMA COMPLET
+──────────────────────────────────────────
+
+Fichier    : api/dev.db
+ORM        : Prisma v6
+Config     : api/.env → DATABASE_URL=file:./dev.db
+Init SQLite: PRAGMA journal_mode=WAL; PRAGMA busy_timeout=5000;
+             PRAGMA synchronous=NORMAL; PRAGMA foreign_keys=ON;
+
+ÉNUMÉRATIONS (Prisma Enums → SQLite TEXT)
+  AbsenceType  : CP | RTT | MALADIE | FORMATION | AUTRE
+  SlotType     : AM | PM | FULL
+  ProjectStatus: A_PLANIFIER | EN_COURS | BLOQUE | TERMINE
+  TaskStatus   : PENDING | DONE | NOT_DONE
+
+─── TABLE Subsidiary (Filiale d'entreprise) ─────────────────────────────────
+  id         String   PK uuid()
+  code       String   UNIQUE — ex: "CAA", "STB"
+  name       String   — ex: "CAA GUADELOUPE"
+  createdAt  DateTime auto
+  updatedAt  DateTime auto
+  Relations  : → 1:N Workshop
+
+─── TABLE Workshop (Atelier) ────────────────────────────────────────────────
+  id           String   PK uuid()
+  subsidiaryId String   FK→Subsidiary (CASCADE DELETE)
+  code         String   — ex: "PRINCIPAL", "CARROSSERIE", "MECANIQUE"
+  name         String   — ex: "Atelier CAA GUADELOUPE"
+  themeColor   String?  — couleur HSL ex: "217 91% 50%"
+  createdAt    DateTime auto
+  updatedAt    DateTime auto
+  UNIQUE(subsidiaryId, code)
+  Relations    : → 1:N Team, Employee, Project
+  NOTE: Unité principale de planification. Un atelier appartient à une filiale.
+        Plusieurs ateliers possibles par filiale.
+
+─── TABLE Team (Équipe — maintenu en BDD, non actif dans l'UI actuelle) ─────
+  id         String   PK uuid()
+  workshopId String   FK→Workshop (CASCADE DELETE)
+  name       String
+  isActive   Boolean  default true
+  UNIQUE(workshopId, name)
+  Relations  : → 1:N Employee
+  NOTE: Sous-groupe d'un atelier. Présent en BDD mais l'UI a migré vers les
+        workshops comme unité principale.
+
+─── TABLE Employee (Employé / Salarié) ──────────────────────────────────────
+  id         String   PK uuid()
+  workshopId String   FK→Workshop (CASCADE DELETE) ← atelier de rattachement
+  teamId     String?  FK→Team (SET NULL on delete) ← sous-groupe optionnel
+  code       String   — code salarié ERP
+  lastName   String
+  firstName  String
+  isActive   Boolean  default true
+  UNIQUE(workshopId, code)
+  Relations  : → 1:N Assignment, Absence, Task
+
+─── TABLE Project (Chantier / Commande client) ──────────────────────────────
+  id            String        PK uuid()
+  workshopId    String        FK→Workshop (CASCADE DELETE)
+  code          String        — code commande ERP
+  label         String        — titre du chantier
+  color         String        — couleur HSL déterministe (hachage du code)
+  contractStart DateTime?     — date début contractuelle (source ERP)
+  contractEnd   DateTime?     — date livraison contractuelle (source ERP)
+  plannedStart  DateTime?     — début prévisionnel (saisi manuellement)
+  plannedEnd    DateTime?     — fin prévisionnelle (saisie manuellement)
+  status        ProjectStatus default A_PLANIFIER
+  progressPct   Int           default 0 (0 à 100)
+  isActive      Boolean       default true
+  UNIQUE(workshopId, code)
+  Relations     : → 1:N ManufacturingOrder, Assignment, Task
+
+─── TABLE ManufacturingOrder (Ordre de Fabrication — OF) ────────────────────
+  id        String  PK uuid()
+  projectId String  FK→Project (CASCADE DELETE)
+  code      String  — code OF ERP
+  label     String? — désignation article
+  UNIQUE(projectId, code)
+  Relations : → 1:N Assignment
+
+─── TABLE Assignment (Affectation employé-chantier) ─────────────────────────
+  id                   String   PK uuid()
+  employeeId           String   FK→Employee (CASCADE DELETE)
+  projectId            String   FK→Project (CASCADE DELETE)
+  manufacturingOrderId String?  FK→ManufacturingOrder (SET NULL)
+  date                 DateTime — date de l'affectation
+  slot                 SlotType default FULL — AM / PM / FULL
+  timeSpentMinutes     Int?     — temps passé en minutes (optionnel)
+  comment              String?  — commentaire libre
+  INDEX(employeeId, date)
+  INDEX(projectId)
+  RÈGLE: Un employé peut avoir AM + PM le même jour = 2 lignes.
+         Un employé peut avoir plusieurs chantiers sur le même slot.
+
+─── TABLE Absence ────────────────────────────────────────────────────────────
+  id         String      PK uuid()
+  employeeId String      FK→Employee (CASCADE DELETE)
+  date       DateTime    — jour d'absence
+  type       AbsenceType — CP / RTT / MALADIE / FORMATION / AUTRE
+  comment    String?
+  UNIQUE(employeeId, date) ← une seule absence par jour par personne
+
+─── TABLE Task (Tâche assignée) ──────────────────────────────────────────────
+  id              String     PK uuid()
+  employeeId      String     FK→Employee (CASCADE DELETE) — destinataire
+  projectId       String?    FK→Project (SET NULL) — lien chantier optionnel
+  title           String
+  description     String?
+  dueDate         DateTime?  — date d'échéance
+  status          TaskStatus default PENDING
+  responseComment String?    — commentaire de réponse de l'employé
+  respondedAt     DateTime?  — horodatage de la réponse
+  INDEX(employeeId), INDEX(projectId)
+
+
+5. API REST — ROUTES COMPLÈTES
+────────────────────────────────
+
+Serveur  : Fastify v5
+Port     : 3001
+Base URL : http://localhost:3001
+Format   : JSON
+CORS     : tous origines autorisés (dev)
+
+GET  /health          → { ok: true }
+
+── FILIALES ──
+GET    /subsidiaries
+POST   /subsidiaries                      body: { code, name }
+GET    /subsidiaries/:id
+PATCH  /subsidiaries/:id                  body: { code?, name? }
+DELETE /subsidiaries/:id
+
+── ATELIERS ──
+GET    /workshops?subsidiaryId=
+POST   /workshops                         body: { subsidiaryId, code, name, themeColor? }
+PATCH  /workshops/:id                     body: { code?, name?, themeColor? }
+DELETE /workshops/:id
+
+── EMPLOYÉS ──
+GET    /employees?workshopId=&teamId=
+POST   /employees                         body: { workshopId, teamId?, code, lastName, firstName }
+PATCH  /employees/:id                     body: { workshopId?, teamId?, code?, lastName?, firstName?, isActive? }
+DELETE /employees/:id
+
+── ÉQUIPES ──
+GET    /teams?workshopId=
+POST   /teams                             body: { workshopId, name }
+PATCH  /teams/:id                         body: { name?, isActive? }
+DELETE /teams/:id
+
+── PROJETS / CHANTIERS ──
+GET    /projects?workshopId=&isActive=
+GET    /projects/:id                      (inclut les OFs associés)
+POST   /projects                          body: { workshopId, code, label, color, contractStart?, contractEnd?, plannedStart?, plannedEnd?, status?, progressPct? }
+PATCH  /projects/:id                      body: champs partiels
+DELETE /projects/:id
+
+── ORDRES DE FABRICATION ──
+GET    /manufacturing-orders?projectId=&workshopId=
+POST   /manufacturing-orders              body: { projectId, code, label? }
+PATCH  /manufacturing-orders/:id          body: { code?, label? }
+DELETE /manufacturing-orders/:id
+
+── AFFECTATIONS ──
+GET    /assignments?employeeId=&projectId=&workshopId=&dateFrom=&dateTo=
+POST   /assignments                       body: { employeeId, projectId, date, slot, manufacturingOrderId?, timeSpentMinutes?, comment? }
+POST   /assignments/bulk                  body: { assignments[] } ← création multiple
+PATCH  /assignments/:id                   body: { slot?, timeSpentMinutes?, comment? }
+DELETE /assignments/:id
+
+── ABSENCES ──
+GET    /absences?employeeId=&workshopId=&dateFrom=&dateTo=
+POST   /absences                          body: { employeeId, date, type, comment? }
+DELETE /absences/:id
+DELETE /absences?employeeId=&date=        ← supprime par employé + date
+
+── TÂCHES ──
+GET    /tasks?employeeId=&projectId=&workshopId=&status=
+GET    /tasks/:id
+POST   /tasks                             body: { employeeId, projectId?, title, description?, dueDate? }
+PATCH  /tasks/:id                         body: { title?, description?, dueDate?, projectId? }
+PATCH  /tasks/:id/respond                 body: { status: DONE|NOT_DONE, responseComment? }
+DELETE /tasks/:id
+
+── PLANNING AGRÉGAT ──
+GET    /planning?workshopId=&dateFrom=&dateTo=[&teamId=]
+       Retourne en UNE seule requête optimisée :
+       { employees[], assignments[], absences[], tasks[] }
+       Utilisé au chargement initial et à la navigation semaine.
+
+── SYNCHRONISATION FABRIC ──
+POST   /sync/fabric
+       Déclenche la sync manuelle.
+       Retourne : { subsidiaries, workshops, employees, projects,
+                    manufacturingOrders, errors[], durationMs }
+GET    /sync/status
+       Retourne le statut + résultat de la dernière synchronisation.
+
+
+6. CONNEXION MICROSOFT FABRIC — SYNCHRONISATION ERP
+─────────────────────────────────────────────────────
+
+Microsoft Fabric est le data warehouse cloud de l'entreprise, connecté à l'ERP.
+La synchronisation lit les tables ERP et les importe dans SQLite en local.
+
+VARIABLES D'ENVIRONNEMENT REQUISES (api/.env)
+  DATABASE_URL=file:./dev.db
+  FABRIC_TENANT_ID=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+  FABRIC_CLIENT_ID=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+  FABRIC_CLIENT_SECRET=votre-secret-azure-ad
+  FABRIC_SQL_ENDPOINT=xxxxxxxx-xxxx.datawarehouse.fabric.microsoft.com
+  FABRIC_DATABASE=nom_du_warehouse_fabric
+
+AUTHENTIFICATION AZURE AD
+  Librairie : @azure/identity → ClientSecretCredential
+  Scope     : https://analysis.windows.net/powerbi/api/.default
+  Mécanisme : Le Service Principal obtient un token OAuth2 Azure AD
+              avant chaque connexion. Ce token est passé à mssql via
+              type: 'azure-active-directory-access-token'.
+  Chiffrement: encrypt=true, trustServerCertificate=false
+
+TABLES ERP LUES (T-SQL vers Fabric SQL Endpoint)
+
+  1. [Entreprise]  →  Subsidiary + Workshop "PRINCIPAL"
+     SELECT [IdEntreprise], [Entreprise]
+     Pour chaque entreprise : upsert Subsidiary(code, name)
+     + upsert Workshop(code='PRINCIPAL', name='Atelier {name}')
+
+  2. [Salarié]  →  Employee
+     SELECT [IdSalarié], [Nom salarié], [Prénom salarié],
+            [Code salarié], [Code entreprise]
+     Associe chaque salarié au workshop de son entreprise.
+     Upsert sur (workshopId, code).
+
+  3. [Commande client ligne]  →  Project
+     SELECT [Code commande], [Titre commande], [Code et titre commande],
+            [Date commande], [Date livraison], [Etat avancement], [IdEntreprise]
+     Déduplication par [Code commande] (table multi-lignes par article).
+     contractStart ← [Date commande]
+     contractEnd   ← [Date livraison]
+     status        ← mappage [Etat avancement]
+
+  4. [Dépense temps passé]  →  ManufacturingOrder (OF)
+     SELECT DISTINCT [Code OF], [Code commande client], [IdArticle]
+     Lie chaque OF au Project correspondant.
+
+MAPPING STATUT ERP → STATUT INTERNE
+  Code ERP 0, 1  →  A_PLANIFIER
+  Code ERP 2, 3  →  EN_COURS
+  Code ERP 4     →  BLOQUE
+  Code ERP 5, 6  →  TERMINE
+  (Codes non reconnus → EN_COURS par défaut)
+
+COULEURS DES CHANTIERS
+  Algorithme golden-angle hue sur le code commande (hash 16 bits).
+  Résultat HSL stable et unique : même code = même couleur entre les syncs.
+  Format : "{hue} {sat}% {light}%" — ex: "184 72% 48%"
+
+FRÉQUENCE
+  Automatique : cron "0 * * * *" → toutes les heures pile
+  Manuelle    : POST /sync/fabric (bouton dans Admin → Sync Fabric)
+  La sync est "upsert" : elle ne supprime jamais les données locales.
+
+
+7. PAGES ET FONCTIONNALITÉS DÉTAILLÉES
+───────────────────────────────────────
+
+PAGE D'ACCUEIL  /
+  Tableau de bord avec cartes d'accès rapide.
+  - Cartes : Planning Prévisionnel, Vue Gantt, Vue Chantier, Calendrier Personne
+  - Section Administration : liens Ateliers, Personnel, Chantiers, Sync Fabric
+  - Sélecteur de filiale active (contexte global)
+  - Bouton de synchronisation Fabric avec statut en temps réel (spinner + résultats)
+
+PAGE PLANNING  /planning
+  Grille hebdomadaire principale. Cœur de l'application.
+  - Header : sélecteur filiale + sélecteur atelier + navigation semaine
+  - Navigation : semaine précédente / suivante / bouton "Aujourd'hui"
+  - Colonnes : Lundi → Dimanche (7 jours). Week-end stylé différemment (bg-muted/20)
+  - Lignes : une ligne par employé actif de l'atelier sélectionné
+  - Cellules AM/PM : chaque jour est découpé en Matin (haut) et Après-midi (bas),
+    chacun cliquable indépendamment
+  - Clic sur AM ou PM → ouvre AssignmentModal
+  - AssignmentModal : choix du chantier(s), OF associé, slot (AM/PM/Journée entière),
+    temps passé (heures décimales), commentaire
+  - Absences affichées visuellement dans la cellule (couleur + type)
+  - Menu clic droit → options contextuelles (ajouter absence, dupliquer, etc.)
+  - Sélection multiple de personnes via cases à cocher → barre d'actions groupées
+  - Duplication de semaine : copier les affectations de la semaine précédente
+  - Annuler / Rétablir (undo/redo) sur toutes les actions
+  - Palette de commandes Ctrl+K : recherche rapide personne ou chantier
+  - Journal d'activité : log des dernières actions effectuées
+  - Panel de validation : mode "validation" activable pour soumettre des demandes
+  - Export Excel de la semaine courante
+  - Export PDF de la semaine courante
+  - Affichage de densité : compacte / confort / spacieuse
+  - KPIs en header : nombre d'employés, % jours remplis
+  - État vide : si aucun atelier sélectionné → invite à sélectionner un atelier
+  - État vide : si atelier sans membres → lien vers Gestion des Ateliers
+
+PAGE GANTT  /gantt
+  Vue Gantt des chantiers avec 3 couches visuelles superposées :
+  1. Contractuel (baseline ERP) : barre hachurée / pointillée
+  2. Prévisionnel (dates saisies manuellement) : barre claire
+  3. Réel (calculé depuis les affectations enregistrées) : barre pleine + progression
+  - Icônes de statut par chantier : A planifier / En cours / Bloqué / Terminé
+  - Barres de progression visuelles (progressPct)
+  - Navigation temporelle sur l'axe horizontal
+
+PAGE VUE CHANTIER  /chantier
+  Vue centrée sur un chantier / projet unique.
+  - Panneau gauche : liste des projets avec leur statut et leur barre de progression
+  - Panneau droit : grille hebdomadaire AM/PM pour le chantier sélectionné
+  - Affiche les OFs (ordres de fabrication) liés au chantier
+  - Liste des intervenants affectés à ce chantier + totaux temps passé
+  - Navigation semaine comme la page planning principale
+
+PAGE CALENDRIER PERSONNE  /person-calendar
+  Calendrier individuel pour un employé.
+  - Basé sur FullCalendar v6
+  - Vues : mois, semaine
+  - Affiche toutes les affectations et absences de la personne sélectionnée
+  - Sélecteur d'employé dans le header
+
+PAGE ADMIN — GESTION DES ATELIERS  /admin/teams
+  Gestion des workshops (ateliers) groupés par filiale.
+  - Toutes les filiales affichées, chacune expansible
+  - Chaque filiale affiche ses ateliers avec le nombre de membres
+  - Bouton "Nouvel atelier" par filiale → formulaire inline
+  - Création d'un atelier : saisie du nom → POST /workshops
+  - Renommer un atelier : édition inline → PATCH /workshops/:id
+  - Supprimer un atelier → DELETE /workshops/:id
+  - Expansion d'un atelier → liste des membres actuels
+  - Champ de recherche "Affecter une personne" → dropdown autocomplete
+  - Affecter un employé : PATCH /employees/:id { workshopId }
+    (déplace l'employé d'un atelier à l'autre automatiquement)
+
+PAGE ADMIN — GESTION DU PERSONNEL  /admin/people
+  Gestion de tous les employés.
+  - Liste complète avec code, nom, prénom, atelier, statut actif/inactif
+  - Créer un nouvel employé → POST /employees
+  - Modifier un employé (nom, prénom, code, atelier, statut) → PATCH /employees/:id
+  - Archiver / Réactiver un employé (isActive)
+  - Filtrage par atelier, recherche par nom/code
+  - Sélecteur atelier pour chaque employé (workshopId)
+
+PAGE ADMIN — GESTION DES CHANTIERS  /admin/projects
+  CRUD complet des projets/chantiers.
+  - Liste des chantiers avec code, label, statut, progression, dates
+  - Créer un chantier → POST /projects
+  - Modifier : code, label, couleur, dates contractuelles, dates prévisionnelles,
+               statut, progression (%) → PATCH /projects/:id
+  - Activer / Désactiver un chantier
+  - Gérer les OFs (ordres de fabrication) associés
+  - Supprimer un chantier → DELETE /projects/:id
+
+PAGE ADMIN — FILIALES & ATELIERS  /admin/subsidiaries
+  Gestion des entités organisationnelles.
+  - CRUD des filiales : créer, modifier, supprimer
+  - CRUD des ateliers par filiale (vue complémentaire à /admin/teams)
+
+PAGE ADMIN — SYNC FABRIC  /admin/sync
+  Interface de synchronisation ERP.
+  - Bouton "Lancer la synchronisation" → POST /sync/fabric
+  - Résultats affichés : nombre de filiales, ateliers, employés,
+    chantiers, OFs synchronisés
+  - Liste des erreurs éventuelles
+  - Durée de la synchronisation affichée
+  - Statut de la dernière synchronisation automatique
+
+
+8. ÉTAT GLOBAL (PlanningStoreContext)
+──────────────────────────────────────
+
+Fichier : src/contexts/PlanningStoreContext.tsx
+Hook    : usePlanningStore() → accès direct au store
+Hook    : usePlanningData() → données + actions dérivées (wrapper)
+
+DONNÉES DANS LE STORE
+  subsidiaries[]        — Filiales chargées
+  workshops[]           — Ateliers chargés
+  teams[]               — Équipes (maintenu, non actif UI)
+  people[]              — Employés
+  projects[]            — Chantiers
+  manufacturingOrders[] — Ordres de fabrication
+  assignments[]         — Affectations (période courante)
+  absences[]            — Absences (période courante)
+  tasks[]               — Tâches
+  isLoading             — Indicateur chargement
+
+SÉLECTIONS ACTIVES
+  selectedSubsidiaryId  — Filiale sélectionnée
+  selectedWorkshopId    — Atelier sélectionné
+  selectedTeamId        — Équipe (déprécié, conservé pour compat.)
+  validationMode        — Booléen : mode validation activé/désactivé
+
+SETTERS EXPOSÉS
+  setTeams, setPeople, setManufacturingOrders
+  setSelectedSubsidiaryId, setSelectedWorkshopId, setSelectedTeamId
+  setValidationMode
+
+ACTIONS
+  addMultipleAssignments(personId, projectIds[], date, comment, ofId?, slot, temps?)
+  removeAssignment(assignmentId)
+  addAbsence(personId, date, type, comment?)
+  removeAbsence(absenceId)
+  hasAbsence(personId, date) → boolean
+  loadPeriod(workshopId, dateFrom, dateTo) ← GET /planning agrégat
+  addTask / respondToTask / removeTask
+  createChangeRequest / approveChangeRequest / rejectChangeRequest
+
+MODE OFFLINE (sans API)
+  Si VITE_API_URL est absent du .env, le store fonctionne entièrement
+  avec les données de src/data/mockData.ts. Aucun serveur nécessaire.
+  L'application est pleinement utilisable pour des démonstrations.
+
+DONNÉES DÉRIVÉES (usePlanningData)
+  selectedSubsidiary    — objet Subsidiary actif
+  selectedWorkshop      — objet Workshop actif
+  workshopsForSubsidiary— ateliers de la filiale active
+  teamPeople            — employés actifs de l'atelier sélectionné
+  activeProjects        — projets actifs de l'atelier
+  teamsForWorkshop      — équipes de l'atelier
+
+
+9. CONFIGURATION ET DÉMARRAGE
+──────────────────────────────
+
+FICHIER .env (racine — frontend)
+  VITE_API_URL=http://localhost:3001
+  Si absent ou vide → mode offline (données mock)
+
+FICHIER api/.env (backend)
+  DATABASE_URL=file:./dev.db
+  FABRIC_TENANT_ID=...
+  FABRIC_CLIENT_ID=...
+  FABRIC_CLIENT_SECRET=...
+  FABRIC_SQL_ENDPOINT=...
+  FABRIC_DATABASE=...
+
+COMMANDES
+
+  Installer toutes les dépendances (frontend + backend) :
+    npm install
+
+  Démarrer le frontend en développement (port 8080) :
+    npm run dev
+
+  Démarrer le backend en développement (port 3001) :
+    npm run dev:api
+
+  Initialiser la base de données (première installation) :
+    cd api
+    npx prisma migrate dev
+
+  Appliquer les migrations existantes (déploiement) :
+    cd api
+    npx prisma migrate deploy
+
+  Voir la BDD visuellement dans le navigateur :
+    cd api
+    npx prisma studio
+
+  Régénérer le client Prisma après modif du schema.prisma :
+    cd api
+    npx prisma generate
+
+  Build production frontend :
+    npm run build
+
+  Build production backend :
+    npm run build:api
+
+  Démarrer le backend buildé (production) :
+    cd api
+    node dist/index.js
+
+  Lancer les tests :
+    npm run test
+
+
+10. HISTORIQUE COMPLET DES DEMANDES ET MODIFICATIONS
+──────────────────────────────────────────────────────
+
+Toutes les fonctionnalités ont été développées de façon itérative en réponse
+aux demandes ci-dessous :
+
+─── PHASE 1 : Fonctionnalités de base ───────────────────────────────────────
+  DEMANDÉ : Application de planning hebdomadaire pour des ateliers
+  RÉALISÉ :
+  ✓ Grille planning hebdomadaire (personnes × jours)
+  ✓ Modal d'affectation : choix chantier(s)
+  ✓ Gestion des absences (CP, RTT, Maladie, Formation, Autre)
+  ✓ Export Excel et PDF de la semaine
+  ✓ Mode offline avec données mock (sans backend)
+
+─── PHASE 2 : Planning AM/PM et enrichissement ──────────────────────────────
+  DEMANDÉ : Découper les journées en matin/après-midi, afficher le week-end,
+            suivre les dates contractuelles des chantiers et les temps passés
+  RÉALISÉ :
+  ✓ SlotType AM | PM | FULL — chaque cellule découpée en 2 moitiés cliquables
+  ✓ Semaine Lun→Dim (7 jours), week-end affiché avec style distinct
+  ✓ Dates contractuelles (contractStart / contractEnd) sur les projets
+  ✓ Dates prévisionnelles (plannedStart / plannedEnd) saisies manuellement
+  ✓ Statuts projet : A_PLANIFIER | EN_COURS | BLOQUE | TERMINE
+  ✓ Suivi progression (progressPct 0–100)
+  ✓ Temps passé (timeSpentMinutes) sur les affectations
+  ✓ Vue Chantier (/chantier) : grille + OFs + intervenants + temps totaux
+  ✓ Vue Gantt à 3 couches : Contractuel (baseline) / Prévisionnel / Réel
+
+─── PHASE 3 : Backend complet + base de données ─────────────────────────────
+  DEMANDÉ : Persister les données, avoir une vraie API REST, une BDD
+  RÉALISÉ :
+  ✓ Backend Fastify v5 + Prisma v6 + SQLite
+  ✓ Schéma BDD complet (8 tables + 4 enums)
+  ✓ API REST avec toutes les routes CRUD
+  ✓ Endpoint agrégat GET /planning pour chargement optimisé
+  ✓ Mode WAL SQLite (performances écriture)
+  ✓ Validation de toutes les entrées API avec Zod
+  ✓ Client API typé dans src/lib/api.ts
+  ✓ Variable VITE_API_URL pour activer/désactiver l'API
+
+─── PHASE 4 : Connexion Microsoft Fabric ────────────────────────────────────
+  DEMANDÉ : Synchroniser les données depuis l'ERP via Microsoft Fabric
+  RÉALISÉ :
+  ✓ Service fabricSync.ts : connexion au SQL Endpoint Fabric
+  ✓ Authentification Azure AD via Service Principal (ClientSecretCredential)
+  ✓ Import Entreprises → Subsidiaries + Workshops (atelier PRINCIPAL par défaut)
+  ✓ Import Salariés → Employees
+  ✓ Import Commandes client → Projects (avec dates, statut)
+  ✓ Import OFs (Dépense temps passé) → ManufacturingOrders
+  ✓ Sync automatique toutes les heures (node-cron "0 * * * *")
+  ✓ Sync manuelle depuis Admin → Sync Fabric
+  ✓ Couleurs déterministes par code chantier (stable entre les syncs)
+  ✓ Mappage codes ERP → statuts internes
+
+─── PHASE 5 : Correction bug — membres absents du planning ──────────────────
+  PROBLÈME : Les employés affectés à une équipe n'apparaissaient pas dans la
+             grille de planning.
+  CAUSES TROUVÉES ET CORRIGÉES :
+  ✓ AdminTeamsPage utilisait un état local (useState) pour teams et people,
+    déconnecté du PlanningStoreContext global. Fix : utiliser store.setTeams
+    et store.setPeople pour propager les changements globalement.
+  ✓ setTeams et setPeople n'étaient pas exposés dans l'interface PlanningStore.
+    Fix : ajout dans l'interface + dans le value du Context Provider.
+  ✓ L'API rejetait { teamId: null } lors de la désaffectation d'un employé.
+    Fix : EmployeeCreateSchema → teamId: z.string().uuid().nullable().optional()
+
+─── PHASE 6 : Refactoring Équipes → Ateliers ────────────────────────────────
+  DEMANDÉ : "Les équipes C'EST les ateliers. Supprimer équipes, remplacer par
+            ateliers. Plusieurs ateliers possibles par filiale."
+  RÉALISÉ :
+  ✓ AdminTeamsPage réécrite pour gérer les WORKSHOPS (ateliers) groupés
+    par filiale — plus les teams comme unité de planification
+  ✓ Interface par filiale expansible, avec N ateliers par filiale
+  ✓ Création d'atelier par filiale : bouton "Nouvel atelier" → POST /workshops
+  ✓ Affectation employé à un atelier : PATCH /employees/:id { workshopId }
+  ✓ usePlanningData : teamPeople filtre par workshop_id (tous actifs du workshop)
+  ✓ PlanningPage : suppression du TeamSelector (le WorkshopSelector suffit)
+  ✓ Tous les textes "Équipes" → "Ateliers" dans l'UI
+  ✓ api.employees.update() accepte workshopId dans son type TypeScript
+  ✓ Build TypeScript sans erreur (vérifié via npx tsc --noEmit)
+  ✓ Navigation Index.tsx : "Gérer les équipes" → "Gérer les ateliers"
+
+
+11. POINTS IMPORTANTS À RETENIR
+─────────────────────────────────
+
+1. ATELIERS = WORKSHOPS (PAS les "teams" de la BDD)
+   La table Team existe en BDD mais est non active dans l'UI actuelle.
+   L'unité de planification est le Workshop. Employee.workshopId
+   détermine qui apparaît dans quelle grille de planning.
+
+2. SYNC FABRIC = UPSERT uniquement
+   La sync ne supprime jamais de données locales.
+   Elle crée si absent, met à jour si présent.
+   Les données saisies manuellement (plannedStart, progressPct, etc.)
+   ne sont jamais écrasées par la sync.
+
+3. MODE OFFLINE
+   Sans VITE_API_URL dans .env, toute l'app tourne sur mockData.ts.
+   Utile pour démo ou développement frontend sans backend.
+
+4. SLOTS AM / PM / FULL
+   Un employé peut avoir AM + PM le même jour (2 assignments différents).
+   Chaque slot est une entrée séparée en BDD.
+   La cellule de la grille est découpée visuellement en haut (AM) et bas (PM).
+
+5. COULEURS DES CHANTIERS
+   Générées algorithmiquement depuis le code commande.
+   Stables entre les synchronisations : même code → même couleur toujours.
+
+6. PERFORMANCES SQLITE
+   PRAGMA WAL activé au démarrage du serveur.
+   busy_timeout=5000ms pour gérer les accès concurrents.
+   Index sur (employeeId, date) et (projectId) pour les affectations.
+
+================================================================================
+  FIN DE LA DOCUMENTATION
+================================================================================
+
+

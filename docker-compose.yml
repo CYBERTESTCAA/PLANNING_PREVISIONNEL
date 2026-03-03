@@ -1,0 +1,45 @@
+version: "3.8"
+
+services:
+  # ── API Backend (Fastify + Prisma + SQLite) ──────────────────────────────
+  api:
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+    container_name: planning-api
+    restart: unless-stopped
+    env_file: ./api/.env
+    environment:
+      - DATABASE_URL=file:/data/planning.sqlite
+      - HOST=0.0.0.0
+      - PORT=3001
+    volumes:
+      - api-data:/data
+    ports:
+      - "127.0.0.1:3001:3001"
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:3001/health').then(r=>{if(!r.ok)throw 1})"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  # ── Frontend (Nginx + Vite build) ────────────────────────────────────────
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL: /api
+        VITE_AZURE_AD_TENANT_ID: "55981225-247f-4ff6-8678-e1efb27d133e"
+        VITE_AZURE_AD_CLIENT_ID: "c7abec75-508c-4495-9043-851280c3160c"
+    container_name: planning-web
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    depends_on:
+      api:
+        condition: service_healthy
+
+volumes:
+  api-data:
+    driver: local

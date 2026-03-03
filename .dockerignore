@@ -1,0 +1,19 @@
+node_modules
+dist
+api/node_modules
+api/dist
+api/*.sqlite
+api/*.sqlite-journal
+.env
+.env.local
+.env.production
+api/.env
+.git
+.github
+.vscode
+.idea
+dbo
+image
+IMAGES TABLES
+*.md
+bun.lockb

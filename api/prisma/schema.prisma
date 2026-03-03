@@ -1,0 +1,364 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Enums ────────────────────────────────────────────────────────────────────
+
+enum AbsenceType {
+  CP
+  RTT
+  MALADIE
+  FORMATION
+  AUTRE
+}
+
+enum SlotType {
+  AM
+  PM
+  FULL
+}
+
+enum ProjectStatus {
+  A_PLANIFIER
+  EN_COURS
+  BLOQUE
+  TERMINE
+}
+
+enum TaskStatus {
+  PENDING
+  DONE
+  NOT_DONE
+}
+
+// ─── Org structure ────────────────────────────────────────────────────────────
+
+model Subsidiary {
+  id        String     @id @default(uuid())
+  code      String     @unique
+  name      String
+  address   String?
+  city      String?
+  postalCode String?
+  phone     String?
+  email     String?
+  siret     String?
+
+  workshops Workshop[]
+  employees Employee[]
+  clients   Client[]
+  schedules SubsidiarySchedule[]
+
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+}
+
+model Workshop {
+  id           String   @id @default(uuid())
+  subsidiaryId String
+  code         String
+  name         String
+  themeColor   String?
+
+  subsidiary Subsidiary @relation(fields: [subsidiaryId], references: [id], onDelete: Cascade)
+  teams      Team[]
+  employees  Employee[]
+  projects   Project[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([subsidiaryId, code])
+}
+
+model Team {
+  id         String   @id @default(uuid())
+  workshopId String
+  name       String
+  isActive   Boolean  @default(true)
+
+  workshop  Workshop   @relation(fields: [workshopId], references: [id], onDelete: Cascade)
+  employees Employee[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([workshopId, name])
+}
+
+model Employee {
+  id           String  @id @default(uuid())
+  subsidiaryId String
+  workshopId   String?
+  teamId       String?
+  code         String
+  lastName     String
+  firstName    String
+  isActive     Boolean @default(true)
+  // Enriched from Salarié warehouse table
+  matriculeRH    String?
+  service        String?
+  qualification  String?
+  isInterim      Boolean @default(false)
+  hireDate       DateTime?
+  managerCode    String?
+
+  subsidiary  Subsidiary   @relation(fields: [subsidiaryId], references: [id], onDelete: Cascade)
+  workshop    Workshop?    @relation(fields: [workshopId], references: [id], onDelete: SetNull)
+  team        Team?        @relation(fields: [teamId], references: [id], onDelete: SetNull)
+  assignments Assignment[]
+  absences    Absence[]
+  tasks       Task[]
+  timeEntries TimeEntry[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([subsidiaryId, code])
+  @@index([workshopId])
+}
+
+// ─── Projects ─────────────────────────────────────────────────────────────────
+
+model Project {
+  id         String        @id @default(uuid())
+  workshopId String
+  code       String
+  label      String
+  color      String
+  // Contractuel (baseline)
+  contractStart DateTime?
+  contractEnd   DateTime?
+  // Prévisionnel
+  plannedStart  DateTime?
+  plannedEnd    DateTime?
+  status        ProjectStatus @default(A_PLANIFIER)
+  progressPct   Int           @default(0)
+  isActive      Boolean       @default(true)
+  // Enriched from Commande client ligne + Affaire
+  clientId        String?
+  affaireId       String?
+  montantVente    Float?
+  quantiteCommandee Float?
+  isSoldee        Boolean  @default(false)
+  isInterne       Boolean  @default(false)
+  commercialName  String?
+  technicienName  String?
+  responsableName String?
+
+  workshop            Workshop             @relation(fields: [workshopId], references: [id], onDelete: Cascade)
+  client              Client?              @relation(fields: [clientId], references: [id], onDelete: SetNull)
+  affaire             Affaire?             @relation(fields: [affaireId], references: [id], onDelete: SetNull)
+  manufacturingOrders ManufacturingOrder[]
+  assignments         Assignment[]
+  tasks               Task[]
+  timeEntries         TimeEntry[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([workshopId, code])
+  @@index([clientId])
+  @@index([affaireId])
+}
+
+model ManufacturingOrder {
+  id        String @id @default(uuid())
+  projectId String
+  code      String
+  label     String?
+
+  project     Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  assignments Assignment[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([projectId, code])
+}
+
+// ─── Planning ─────────────────────────────────────────────────────────────────
+
+/// One assignment = one person on one project for one slot on one date.
+/// A person can have AM + PM on the same day (two records).
+/// A person can also have multiple projects in the same slot (allowed).
+model Assignment {
+  id                   String    @id @default(uuid())
+  employeeId           String
+  projectId            String
+  manufacturingOrderId String?
+  date                 DateTime
+  slot                 SlotType  @default(FULL)
+  timeSpentMinutes     Int?
+  comment              String?
+
+  employee            Employee            @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  project             Project             @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  manufacturingOrder  ManufacturingOrder? @relation(fields: [manufacturingOrderId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([employeeId, date])
+  @@index([projectId])
+}
+
+model Absence {
+  id         String      @id @default(uuid())
+  employeeId String
+  date       DateTime
+  slot       SlotType    @default(FULL)
+  type       AbsenceType
+  comment    String?
+
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([employeeId, date, slot])
+}
+
+model SyncLog {
+  id          String   @id @default(uuid())
+  startedAt   DateTime @default(now())
+  finishedAt  DateTime?
+  durationMs  Int?
+  status      String   @default("RUNNING")
+  subsidiaries Int     @default(0)
+  workshops    Int     @default(0)
+  employees    Int     @default(0)
+  projects     Int     @default(0)
+  mfgOrders    Int     @default(0)
+  clients      Int     @default(0)
+  affaires     Int     @default(0)
+  timeEntries  Int     @default(0)
+  calendarDays Int     @default(0)
+  errors       String  @default("[]")
+  triggeredBy  String  @default("manual")
+}
+
+// ─── Warehouse-synced reference data ─────────────────────────────────────────
+
+/// Client from ERP (table "Client" in Fabric warehouse)
+model Client {
+  id           String  @id @default(uuid())
+  subsidiaryId String
+  code         String
+  name         String
+  groupName    String?
+  address      String?
+  city         String?
+  postalCode   String?
+  phone        String?
+  email        String?
+
+  subsidiary Subsidiary @relation(fields: [subsidiaryId], references: [id], onDelete: Cascade)
+  projects   Project[]
+  affaires   Affaire[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([subsidiaryId, code])
+}
+
+/// Affaire / Business deal from ERP (table "Affaire" in Fabric warehouse)
+model Affaire {
+  id             String    @id @default(uuid())
+  code           String    @unique
+  label          String
+  clientId       String?
+  subsidiaryCode String?
+  status         String?   // situation dossier
+  dateCreation   DateTime?
+  dateAccord     DateTime?
+  dateSignature  DateTime?
+  commercialName String?
+  technicienName String?
+  caPrevu        Float?
+  tauxReussite   Float?
+
+  client   Client?   @relation(fields: [clientId], references: [id], onDelete: SetNull)
+  projects Project[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+/// Actual time spent by employees (table "Dépense temps passé" in Fabric warehouse)
+model TimeEntry {
+  id          String   @id @default(uuid())
+  employeeId  String
+  projectId   String?
+  date        DateTime
+  hours       Float    @default(0)
+  cost        Float?   @default(0)
+  ofCode      String?
+  articleCode String?
+
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  project  Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+
+  @@index([employeeId, date])
+  @@index([projectId])
+  @@index([date])
+}
+
+/// Calendar dimension: holidays and working days (table "Calendrier" in Fabric)
+model CalendarDay {
+  id          String   @id @default(uuid())
+  date        DateTime @unique
+  dayName     String?  // Lundi, Mardi, etc.
+  weekNumber  String?
+  monthName   String?
+  year        Int?
+  isWorkDay   Boolean  @default(true)
+  isHoliday   Boolean  @default(false)
+  holidayName String?
+}
+
+/// Working hours per subsidiary per day of week (table "JoursFiliale")
+model SubsidiarySchedule {
+  id           String @id @default(uuid())
+  subsidiaryId String
+  dayOfWeek    String // Lundi, Mardi, etc.
+  hours        String // e.g. "08:00-12:00 13:30-17:30"
+
+  subsidiary Subsidiary @relation(fields: [subsidiaryId], references: [id], onDelete: Cascade)
+
+  @@unique([subsidiaryId, dayOfWeek])
+}
+
+// ─── Tasks ────────────────────────────────────────────────────────────────────
+
+/// A task can be linked to a person (required), optionally to a project.
+/// The assigned person responds: DONE / NOT_DONE + optional comment.
+model Task {
+  id          String     @id @default(uuid())
+  employeeId  String
+  projectId   String?
+  title       String
+  description String?
+  dueDate     DateTime?
+
+  status          TaskStatus @default(PENDING)
+  responseComment String?
+  respondedAt     DateTime?
+
+  employee Employee  @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  project  Project?  @relation(fields: [projectId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([employeeId])
+  @@index([projectId])
+}

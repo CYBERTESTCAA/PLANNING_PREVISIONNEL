@@ -1,0 +1,306 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 210 20% 98%;
+    --foreground: 222 47% 11%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
+
+    --primary: 217 91% 50%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 214 20% 94%;
+    --secondary-foreground: 222 47% 11%;
+
+    --muted: 214 20% 96%;
+    --muted-foreground: 215 16% 47%;
+
+    --accent: 214 100% 97%;
+    --accent-foreground: 217 91% 45%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 214 20% 90%;
+    --input: 214 20% 90%;
+    --ring: 217 91% 50%;
+
+    --radius: 0.625rem;
+
+    /* Assignment chip colors */
+    --chip-1: 217 91% 50%;
+    --chip-2: 262 83% 58%;
+    --chip-3: 173 80% 40%;
+    --chip-4: 340 75% 55%;
+    --chip-5: 31 92% 50%;
+
+    /* Absence type colors */
+    --absence-cp: 217 91% 60%;
+    --absence-rtt: 145 63% 42%;
+    --absence-maladie: 340 75% 55%;
+    --absence-formation: 262 83% 58%;
+    --absence-autre: 215 16% 47%;
+
+    /* Grid */
+    --grid-header: 222 47% 11%;
+    --grid-header-foreground: 0 0% 100%;
+    --grid-row-even: 0 0% 100%;
+    --grid-row-odd: 210 20% 98%;
+    --grid-border: 214 20% 88%;
+
+    /* Sidebar */
+    --sidebar-background: 222 47% 11%;
+    --sidebar-foreground: 214 20% 94%;
+    --sidebar-primary: 217 91% 55%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 222 47% 18%;
+    --sidebar-accent-foreground: 214 20% 94%;
+    --sidebar-border: 222 47% 18%;
+    --sidebar-ring: 217 91% 55%;
+
+    /* Status */
+    --success: 145 63% 42%;
+    --success-foreground: 0 0% 100%;
+    --warning: 45 93% 47%;
+    --warning-foreground: 0 0% 0%;
+    --info: 217 91% 50%;
+    --info-foreground: 0 0% 100%;
+  }
+
+  .dark {
+    --background: 222 47% 8%;
+    --foreground: 214 20% 94%;
+
+    --card: 222 47% 11%;
+    --card-foreground: 214 20% 94%;
+
+    --popover: 222 47% 11%;
+    --popover-foreground: 214 20% 94%;
+
+    --primary: 217 91% 55%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 222 47% 18%;
+    --secondary-foreground: 214 20% 94%;
+
+    --muted: 222 47% 18%;
+    --muted-foreground: 215 16% 60%;
+
+    --accent: 222 47% 18%;
+    --accent-foreground: 217 91% 60%;
+
+    --destructive: 0 62% 45%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 222 47% 18%;
+    --input: 222 47% 18%;
+    --ring: 217 91% 55%;
+
+    --grid-header: 222 47% 15%;
+    --grid-header-foreground: 214 20% 94%;
+    --grid-row-even: 222 47% 11%;
+    --grid-row-odd: 222 47% 9%;
+    --grid-border: 222 47% 18%;
+
+    --sidebar-background: 222 47% 6%;
+    --sidebar-foreground: 214 20% 94%;
+    --sidebar-primary: 217 91% 55%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 222 47% 12%;
+    --sidebar-accent-foreground: 214 20% 94%;
+    --sidebar-border: 222 47% 15%;
+    --sidebar-ring: 217 91% 55%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  }
+
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-muted-foreground/20 rounded-full hover:bg-muted-foreground/40 transition-colors;
+  }
+}
+
+@layer components {
+  .planning-grid {
+    @apply w-full border-collapse;
+  }
+
+  .planning-grid th {
+    @apply bg-grid-header text-grid-header-foreground font-semibold text-sm py-3 px-2;
+  }
+
+  .planning-cell {
+    @apply border border-grid-border p-1.5 min-h-[64px] transition-colors hover:bg-accent/50 cursor-pointer;
+  }
+
+  .assignment-chip {
+    @apply inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium truncate max-w-full;
+    @apply transition-all duration-150 hover:scale-105 hover:shadow-sm;
+  }
+
+  .absence-badge {
+    @apply inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium;
+    @apply opacity-90;
+  }
+
+  .week-nav-btn {
+    @apply p-2 rounded-lg hover:bg-secondary transition-colors;
+  }
+
+  .modal-backdrop {
+    @apply fixed inset-0 bg-foreground/50 backdrop-blur-sm z-50;
+  }
+}
+
+@layer utilities {
+  .bg-absence-cp {
+    background-color: hsl(var(--absence-cp) / 0.15);
+    color: hsl(var(--absence-cp));
+    border: 1px solid hsl(var(--absence-cp) / 0.3);
+  }
+
+  .bg-absence-rtt {
+    background-color: hsl(var(--absence-rtt) / 0.15);
+    color: hsl(var(--absence-rtt));
+    border: 1px solid hsl(var(--absence-rtt) / 0.3);
+  }
+
+  .bg-absence-maladie {
+    background-color: hsl(var(--absence-maladie) / 0.15);
+    color: hsl(var(--absence-maladie));
+    border: 1px solid hsl(var(--absence-maladie) / 0.3);
+  }
+
+  .bg-absence-formation {
+    background-color: hsl(var(--absence-formation) / 0.15);
+    color: hsl(var(--absence-formation));
+    border: 1px solid hsl(var(--absence-formation) / 0.3);
+  }
+
+  .bg-absence-autre {
+    background-color: hsl(var(--absence-autre) / 0.15);
+    color: hsl(var(--absence-autre));
+    border: 1px solid hsl(var(--absence-autre) / 0.3);
+  }
+
+  .bg-chip-1 { background-color: hsl(var(--chip-1)); color: hsl(0 0% 100%); }
+  .bg-chip-2 { background-color: hsl(var(--chip-2)); color: hsl(0 0% 100%); }
+  .bg-chip-3 { background-color: hsl(var(--chip-3)); color: hsl(0 0% 100%); }
+  .bg-chip-4 { background-color: hsl(var(--chip-4)); color: hsl(0 0% 100%); }
+  .bg-chip-5 { background-color: hsl(var(--chip-5)); color: hsl(0 0% 100%); }
+
+  .grid-row-even { background-color: hsl(var(--grid-row-even)); }
+  .grid-row-odd { background-color: hsl(var(--grid-row-odd)); }
+
+  .transition-smooth {
+    @apply transition-all duration-200 ease-in-out;
+  }
+}
+
+/* ─── Print mode ──────────────────────────────────────────── */
+@media print {
+  body {
+    background: white !important;
+    color: black !important;
+    font-size: 10px !important;
+  }
+
+  /* Hide everything except the grid */
+  header,
+  .no-print,
+  .modal-backdrop,
+  [data-no-print],
+  button:not(.print-keep),
+  .assignment-chip button,
+  nav {
+    display: none !important;
+  }
+
+  main {
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  /* Show print header */
+  .print-header {
+    display: block !important;
+    margin-bottom: 12px;
+  }
+
+  /* Grid styles for print */
+  .planning-grid {
+    border-collapse: collapse !important;
+    width: 100% !important;
+    font-size: 8px !important;
+  }
+
+  .planning-grid th {
+    background: #1e293b !important;
+    color: white !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+    padding: 4px 3px !important;
+    font-size: 8px !important;
+  }
+
+  .planning-grid td {
+    border: 1px solid #cbd5e1 !important;
+    padding: 2px !important;
+    page-break-inside: avoid;
+  }
+
+  .assignment-chip {
+    font-size: 7px !important;
+    padding: 1px 3px !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .absence-badge {
+    font-size: 7px !important;
+    padding: 1px 3px !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* Force colors in print */
+  .bg-absence-cp,
+  .bg-absence-rtt,
+  .bg-absence-maladie,
+  .bg-absence-formation,
+  .bg-absence-autre {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  @page {
+    size: landscape;
+    margin: 10mm;
+  }
+}
