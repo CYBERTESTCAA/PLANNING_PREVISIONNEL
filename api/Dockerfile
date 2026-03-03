@@ -35,5 +35,5 @@ ENV DATABASE_URL="file:/data/planning.sqlite"
 
 EXPOSE 3001
 
-# Apply migrations safely (no data loss) then start
-CMD ["sh", "-c", "npx prisma migrate deploy && node dist/index.js"]
+# Sync schema to DB (refuses destructive changes without --accept-data-loss)
+CMD ["sh", "-c", "npx prisma db push && node dist/index.js"]
