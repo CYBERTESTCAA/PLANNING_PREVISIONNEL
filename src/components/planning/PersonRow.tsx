@@ -1,3 +1,4 @@
+import { useRef } from 'react';
 import { Person, DayData, SlotType, Task } from '@/types/planning';
 import { DayCell, DensityMode } from './DayCell';
 import { formatDate, isToday, isWeekend } from '@/lib/dateUtils';
@@ -16,6 +17,11 @@ interface PersonRowProps {
   isSelected?: boolean;
   onToggleSelect?: (personId: string) => void;
   showCheckbox?: boolean;
+  onDropAssignment?: (assignmentId: string, targetDate: string, targetSlot: SlotType) => void;
+  onResizeAssignment?: (data: { personId: string; projectId: string; fromDate: string; toDate: string; slot: string; comment: string; moId: string }) => void;
+  enableDrag?: boolean;
+  rowHeight?: number;
+  onRowResizeStart?: (startY: number, currentH: number) => void;
 }
 
 export const PersonRow = ({
@@ -23,11 +29,26 @@ export const PersonRow = ({
   onCellClick, onRemoveAssignment, onCellContextMenu, onTaskClick,
   density = 'comfort',
   isSelected = false, onToggleSelect, showCheckbox = false,
+  onDropAssignment, onResizeAssignment, enableDrag = false,
+  rowHeight = 0, onRowResizeStart,
 }: PersonRowProps) => {
+  const trRef = useRef<HTMLTableRowElement>(null);
+
+  const handleRowResizeMouseDown = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const currentH = trRef.current?.getBoundingClientRect().height ?? 80;
+    onRowResizeStart?.(e.clientY, currentH);
+  };
+
   return (
-    <tr className={isEven ? 'grid-row-even' : 'grid-row-odd'}>
+    <tr
+      ref={trRef}
+      className={isEven ? 'grid-row-even' : 'grid-row-odd'}
+      style={rowHeight > 0 ? { height: `${rowHeight}px` } : undefined}
+    >
       <td className="sticky left-0 z-10 bg-inherit border-r border-grid-border 
-                     min-w-[180px] max-w-[220px]">
+                     min-w-[180px] max-w-[220px] relative">
         <div className="flex items-center gap-2.5 px-3 py-2.5">
           {showCheckbox && (
             <input
@@ -45,11 +66,17 @@ export const PersonRow = ({
             {person.display_name}
           </span>
         </div>
+        {/* Row height resize handle */}
+        <div
+          onMouseDown={handleRowResizeMouseDown}
+          className="absolute left-0 right-0 bottom-0 h-1.5 cursor-row-resize z-10
+                     hover:bg-primary/30 active:bg-primary/50 transition-colors"
+        />
       </td>
 
       {dates.map((date) => {
         const dateStr = formatDate(date);
-        const dayData = days[dateStr] || { assignments: [], absence: null, tasks: [] };
+        const dayData = days[dateStr] || { assignments: [], absence: null, absenceAM: null, absencePM: null, tasks: [] };
         const isTodayDate = isToday(date);
         const isWknd = isWeekend(date);
 
@@ -70,6 +97,9 @@ export const PersonRow = ({
               onTaskClick={onTaskClick ? (task) => onTaskClick(person.id, task) : undefined}
               onContextMenu={(e) => onCellContextMenu?.(person.id, dateStr, e)}
               density={density}
+              onDropAssignment={onDropAssignment}
+              onResizeAssignment={onResizeAssignment}
+              enableDrag={enableDrag}
             />
           </td>
         );

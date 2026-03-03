@@ -9,7 +9,7 @@ type ModalTab = 'assignment' | 'absence' | 'task';
 interface AssignmentModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (projectIds: string[], comment: string, manufacturingOrderId?: string | null, slot?: SlotType, timeSpentMinutes?: number | null, dateEnd?: string | null) => void;
+  onSubmit: (projectIds: string[], comment: string, manufacturingOrderId?: string | null, slot?: SlotType, timeSpentMinutes?: number | null, dateEnd?: string | null, dateStart?: string) => void;
   onAbsenceSubmit?: (type: AbsenceType, comment: string) => void;
   onTaskSubmit?: (params: { title: string; description?: string | null; dueDate?: string | null; projectId?: string | null }) => void;
   projects: Project[];
@@ -28,6 +28,7 @@ export const AssignmentModal = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [comment, setComment] = useState('');
   const [selectedManufacturingOrderId, setSelectedManufacturingOrderId] = useState<string>('');
+  const [dateStart, setDateStart] = useState<string>(date);
   const [dateEnd, setDateEnd] = useState<string>(date);
   const [slot, setSlot] = useState<SlotType>(defaultSlot);
   const [timeSpentHours, setTimeSpentHours] = useState<string>('');
@@ -63,6 +64,7 @@ export const AssignmentModal = ({
       setTab('assignment');
       setSlot(defaultSlot);
       setTimeSpentHours('');
+      setDateStart(date);
       setDateEnd(date);
       setTaskTitle('');
       setTaskDescription('');
@@ -86,8 +88,9 @@ export const AssignmentModal = ({
       const timeSpentMinutes = timeSpentHours && !isNaN(parseFloat(timeSpentHours))
         ? Math.round(parseFloat(timeSpentHours) * 60)
         : null;
-      const rangeEnd = dateEnd && dateEnd !== date ? dateEnd : null;
-      onSubmit(selectedProjectIds, comment, manufacturingOrderId, slot, timeSpentMinutes, rangeEnd);
+      const effectiveDate = dateStart || date;
+      const rangeEnd = dateEnd && dateEnd !== effectiveDate ? dateEnd : null;
+      onSubmit(selectedProjectIds, comment, manufacturingOrderId, slot, timeSpentMinutes, rangeEnd, effectiveDate);
       handleClose();
     } else if (tab === 'absence' && onAbsenceSubmit) {
       onAbsenceSubmit(absenceType, absenceComment);
@@ -288,15 +291,18 @@ export const AssignmentModal = ({
                   <span className="text-xs text-muted-foreground">Du</span>
                   <input
                     type="date"
-                    value={date}
-                    readOnly
-                    className="flex-1 px-2 py-1 bg-secondary rounded text-xs text-foreground focus:outline-none opacity-60 cursor-not-allowed"
+                    value={dateStart}
+                    onChange={(e) => {
+                      setDateStart(e.target.value);
+                      if (e.target.value > dateEnd) setDateEnd(e.target.value);
+                    }}
+                    className="flex-1 px-2 py-1 bg-secondary rounded text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
                   />
                   <span className="text-xs text-muted-foreground">au</span>
                   <input
                     type="date"
                     value={dateEnd}
-                    min={date}
+                    min={dateStart}
                     onChange={(e) => setDateEnd(e.target.value)}
                     className="flex-1 px-2 py-1 bg-secondary rounded text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
                   />

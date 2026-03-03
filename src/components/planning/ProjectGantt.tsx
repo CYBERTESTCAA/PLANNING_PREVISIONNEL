@@ -11,7 +11,7 @@ import {
   isSameDay,
 } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { ChevronLeft, ChevronRight, ZoomIn, ZoomOut, Info, Filter } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ZoomIn, ZoomOut, Info, Filter, Search, BarChart3 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
@@ -43,8 +43,9 @@ interface ProjectGanttProps {
 export const ProjectGantt = ({ projects, assignments, people }: ProjectGanttProps) => {
   const [viewStart, setViewStart] = useState(() => startOfWeek(new Date(), { weekStartsOn: 1 }));
   const [weeksToShow, setWeeksToShow] = useState(8);
-  const [showOnlyWithActivity, setShowOnlyWithActivity] = useState(false);
+  const [showOnlyWithActivity, setShowOnlyWithActivity] = useState(true);
   const [hoveredProject, setHoveredProject] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
 
   const viewEnd = useMemo(() => 
     addDays(viewStart, weeksToShow * 7 - 1), 
@@ -64,6 +65,7 @@ export const ProjectGantt = ({ projects, assignments, people }: ProjectGanttProp
 
   // Calculate Gantt data for each project
   const ganttData = useMemo((): GanttData[] => {
+    const query = searchQuery.toLowerCase().trim();
     return projects
       .filter(p => p.is_active)
       .map(project => {
@@ -102,14 +104,29 @@ export const ProjectGantt = ({ projects, assignments, people }: ProjectGanttProp
         };
       })
       .filter(data => {
-        if (!showOnlyWithActivity) return true;
-        const effectiveStart = data.plannedStart || data.contractStart;
-        const effectiveEnd = data.plannedEnd || data.contractEnd;
-        const hasPlanned = effectiveStart && effectiveEnd &&
-          !(effectiveEnd < viewStart || effectiveStart > viewEnd);
-        const hasActual = data.actualStart && data.actualEnd &&
-          !(data.actualEnd < viewStart || data.actualStart > viewEnd);
-        return hasPlanned || hasActual;
+        // Must have at least SOME data to display a Gantt bar
+        const hasAnyDates = data.contractStart || data.plannedStart || data.actualStart;
+        if (!hasAnyDates) return false;
+
+        // Search filter
+        if (query) {
+          const matches = data.project.code.toLowerCase().includes(query)
+            || data.project.label.toLowerCase().includes(query)
+            || (data.project.client_name || '').toLowerCase().includes(query);
+          if (!matches) return false;
+        }
+
+        // Period filter
+        if (showOnlyWithActivity) {
+          const effectiveStart = data.plannedStart || data.contractStart;
+          const effectiveEnd = data.plannedEnd || data.contractEnd;
+          const hasPlanned = effectiveStart && effectiveEnd &&
+            !(effectiveEnd < viewStart || effectiveStart > viewEnd);
+          const hasActual = data.actualStart && data.actualEnd &&
+            !(data.actualEnd < viewStart || data.actualStart > viewEnd);
+          return hasPlanned || hasActual;
+        }
+        return true;
       })
       .sort((a, b) => {
         const aStart = a.plannedStart || a.contractStart || a.actualStart;
@@ -119,7 +136,13 @@ export const ProjectGantt = ({ projects, assignments, people }: ProjectGanttProp
         if (bStart) return 1;
         return a.project.code.localeCompare(b.project.code);
       });
-  }, [projects, assignments, people, viewStart, viewEnd, showOnlyWithActivity]);
+  }, [projects, assignments, people, viewStart, viewEnd, showOnlyWithActivity, searchQuery]);
+
+  // Count projects that have no dates at all (for info message)
+  const projectsWithoutDates = useMemo(
+    () => projects.filter(p => p.is_active && !p.contract_start && !p.planned_start && assignments.filter(a => a.project_id === p.id).length === 0).length,
+    [projects, assignments]
+  );
 
   // Calculate bar position and width
   const calculateBarStyle = (start: Date | null, end: Date | null) => {
@@ -166,25 +189,42 @@ export const ProjectGantt = ({ projects, assignments, people }: ProjectGanttProp
   return (
     <div className="bg-card border border-border rounded-lg overflow-hidden">
       {/* Toolbar */}
-      <div className="flex items-center justify-between p-4 border-b border-border bg-muted/30">
-        <div className="flex items-center gap-4">
-          <h2 className="text-lg font-semibold text-foreground">Vue Gantt du planning prévisionnel</h2>
-          <span className="text-sm text-muted-foreground">
-            {ganttData.length} chantier(s)
-          </span>
+      <div className="flex items-center justify-between p-3 border-b border-border bg-muted/30 gap-3">
+        <div className="flex items-center gap-3">
+          <span className="text-sm font-semibold text-foreground">{ganttData.length} chantier(s)</span>
+          {projectsWithoutDates > 0 && (
+            <span className="text-[10px] text-amber-600 bg-amber-50 dark:bg-amber-950/30 px-2 py-0.5 rounded-full font-medium">
+              {projectsWithoutDates} sans dates
+            </span>
+          )}
         </div>
 
         <div className="flex items-center gap-2">
+          {/* Search */}
+          <div className="relative">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+            <input
+              type="text"
+              placeholder="Rechercher un chantier..."
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              className="pl-8 pr-3 py-1.5 text-sm bg-secondary rounded-lg text-foreground placeholder:text-muted-foreground
+                         focus:outline-none focus:ring-2 focus:ring-primary/50 w-48"
+            />
+          </div>
+
+          <div className="h-5 w-px bg-border" />
+
           {/* Filter toggle */}
           <button
             onClick={() => setShowOnlyWithActivity(!showOnlyWithActivity)}
-            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm transition-colors
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors
                        ${showOnlyWithActivity 
                          ? 'bg-primary text-primary-foreground' 
                          : 'bg-secondary text-foreground hover:bg-secondary/80'}`}
           >
-            <Filter className="w-4 h-4" />
-            Activité sur la période
+            <Filter className="w-3.5 h-3.5" />
+            Période
           </button>
 
           <div className="h-6 w-px bg-border" />
@@ -293,8 +333,26 @@ export const ProjectGantt = ({ projects, assignments, people }: ProjectGanttProp
 
           {/* Rows */}
           {ganttData.length === 0 ? (
-            <div className="flex items-center justify-center py-12 text-muted-foreground">
-              Aucun chantier à afficher
+            <div className="flex flex-col items-center justify-center py-16 gap-3">
+              <BarChart3 className="w-10 h-10 text-muted-foreground/30" />
+              <div className="text-center">
+                <p className="text-sm font-medium text-foreground">
+                  {searchQuery ? 'Aucun chantier trouvé' : 'Pas de vue Gantt disponible'}
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {searchQuery
+                    ? `Aucun résultat pour "${searchQuery}"`
+                    : 'Des données sont manquantes — les chantiers affichés ici doivent avoir des dates contractuelles, prévisionnelles ou des affectations.'}
+                </p>
+                {!searchQuery && showOnlyWithActivity && (
+                  <button
+                    onClick={() => setShowOnlyWithActivity(false)}
+                    className="mt-3 text-xs text-primary hover:underline font-medium"
+                  >
+                    Afficher tous les chantiers avec des dates
+                  </button>
+                )}
+              </div>
             </div>
           ) : (
             ganttData.map((data, index) => {

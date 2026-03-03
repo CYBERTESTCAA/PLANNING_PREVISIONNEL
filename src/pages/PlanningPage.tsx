@@ -19,7 +19,7 @@ import { TaskResponseDialog } from '@/components/planning/TaskResponseDialog';
 import { DensityMode } from '@/components/planning/DayCell';
 import { formatDate } from '@/lib/dateUtils';
 import { exportToExcel, exportToPDF, duplicateWeekPlanning } from '@/lib/exportUtils';
-import { HardHat, Users, FileSpreadsheet, FileText, Copy, Settings, Search, Undo2, Redo2, CheckSquare, BarChart3, Calendar, Clock, ClipboardCheck, Building2, Activity, Printer, CopyMinus } from 'lucide-react';
+import { HardHat, Users, FileSpreadsheet, FileText, Copy, Settings, Search, Undo2, Redo2, CheckSquare, BarChart3, Calendar, Clock, ClipboardCheck, Building2, Activity, Printer, CopyMinus, ZoomIn, ZoomOut } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import { Link, useNavigate } from 'react-router-dom';
@@ -70,16 +70,38 @@ export const PlanningPage = () => {
 
   useEffect(() => {
     if (!selectedWorkshopId || !weekStart) return;
-    const dateFrom = format(weekStart, 'yyyy-MM-dd');
-    const dateTo = format(addDays(weekStart, 6), 'yyyy-MM-dd');
+    let dateFrom: string;
+    let dateTo: string;
+    if (viewType === 'year') {
+      dateFrom = `${currentDate.getFullYear()}-01-01`;
+      dateTo = `${currentDate.getFullYear()}-12-31`;
+    } else if (viewType === 'month') {
+      const first = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+      const last = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
+      dateFrom = format(first, 'yyyy-MM-dd');
+      dateTo = format(last, 'yyyy-MM-dd');
+    } else {
+      dateFrom = format(weekStart, 'yyyy-MM-dd');
+      dateTo = format(addDays(weekStart, 6), 'yyyy-MM-dd');
+    }
     loadPeriod(selectedWorkshopId, dateFrom, dateTo);
-  }, [selectedWorkshopId, weekStart]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [selectedWorkshopId, weekStart, viewType, currentDate]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Fetch calendar/holidays for visible period
   useEffect(() => {
     if (!weekStart || !isApiEnabled()) return;
-    const from = format(weekStart, 'yyyy-MM-dd');
-    const to = format(addDays(weekStart, 13), 'yyyy-MM-dd');
+    let from: string;
+    let to: string;
+    if (viewType === 'year') {
+      from = `${currentDate.getFullYear()}-01-01`;
+      to = `${currentDate.getFullYear()}-12-31`;
+    } else if (viewType === 'month') {
+      from = format(new Date(currentDate.getFullYear(), currentDate.getMonth(), 1), 'yyyy-MM-dd');
+      to = format(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0), 'yyyy-MM-dd');
+    } else {
+      from = format(weekStart, 'yyyy-MM-dd');
+      to = format(addDays(weekStart, 13), 'yyyy-MM-dd');
+    }
     api.calendar.list({ from, to })
       .then(days => {
         const map: Record<string, HolidayInfo> = {};
@@ -95,6 +117,7 @@ export const PlanningPage = () => {
   }, [weekStart]);
 
   const [density, setDensity] = useState<DensityMode>('comfort');
+  const [cellWidth, setCellWidth] = useState(130);
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
   const [selectedPersonIds, setSelectedPersonIds] = useState<string[]>([]);
   const [showCheckboxes, setShowCheckboxes] = useState(false);
@@ -304,11 +327,11 @@ export const PlanningPage = () => {
     toast.success(status === 'DONE' ? 'Tâche marquée terminée ✓' : 'Tâche marquée non terminée');
   }, [respondToTask]);
 
-  const handleAssignmentSubmit = (projectIds: string[], comment: string, manufacturingOrderId?: string | null, slot?: SlotType, timeSpentMinutes?: number | null, dateEnd?: string | null) => {
+  const handleAssignmentSubmit = (projectIds: string[], comment: string, manufacturingOrderId?: string | null, slot?: SlotType, timeSpentMinutes?: number | null, dateEnd?: string | null, dateStart?: string) => {
     const person = people.find(p => p.id === assignmentModal.personId);
     const effectiveSlot = slot ?? assignmentModal.defaultSlot;
 
-    const startDate = new Date(assignmentModal.date);
+    const startDate = new Date(dateStart || assignmentModal.date);
     const endDate = dateEnd ? new Date(dateEnd) : startDate;
     const days: string[] = [];
     const cur = new Date(startDate);
@@ -385,6 +408,64 @@ export const PlanningPage = () => {
     addActivity('Suppression', 'Affectation supprimée');
     toast.success('Affectation supprimée');
   };
+
+  const handleDropAssignment = useCallback((assignmentId: string, targetDate: string, targetSlot: SlotType) => {
+    const assignment = assignments.find(a => a.id === assignmentId);
+    if (!assignment) return;
+    if (assignment.date === targetDate && (assignment.slot || 'FULL') === targetSlot) return; // same spot
+
+    saveSnapshot('Déplacement affectation');
+    // Remove old
+    removeAssignment(assignmentId);
+    // Create new at target date/slot
+    addMultipleAssignments(
+      assignment.person_id,
+      [assignment.project_id],
+      targetDate,
+      assignment.comment || undefined,
+      assignment.manufacturing_order_id ?? undefined,
+      targetSlot,
+      assignment.time_spent_minutes,
+    );
+    const person = people.find(p => p.id === assignment.person_id);
+    addActivity('Déplacement', `${assignment.project?.code || '?'} → ${targetDate}`, person?.display_name);
+    toast.success('Affectation déplacée');
+  }, [assignments, removeAssignment, addMultipleAssignments, saveSnapshot, people, addActivity]);
+
+  const handleResizeAssignment = useCallback((data: { personId: string; projectId: string; fromDate: string; toDate: string; slot: string; comment: string; moId: string }) => {
+    const { personId, projectId, fromDate, toDate, slot, comment, moId } = data;
+    if (fromDate === toDate) return; // no extension
+
+    // Generate all weekdays between fromDate+1 and toDate (inclusive)
+    const from = new Date(fromDate);
+    const to = new Date(toDate);
+    if (to <= from) return; // only extend forward
+
+    saveSnapshot('Extension affectation');
+    const current = new Date(from);
+    current.setDate(current.getDate() + 1); // start from day after original
+    let created = 0;
+    while (current <= to) {
+      const dow = current.getDay();
+      if (dow !== 0 && dow !== 6) { // skip weekends
+        const dateStr = current.toISOString().split('T')[0];
+        addMultipleAssignments(
+          personId,
+          [projectId],
+          dateStr,
+          comment || undefined,
+          moId || undefined,
+          (slot as SlotType) || 'FULL',
+        );
+        created++;
+      }
+      current.setDate(current.getDate() + 1);
+    }
+    const person = people.find(p => p.id === personId);
+    const project = activeProjects.find(p => p.id === projectId);
+    addActivity('Extension', `${project?.code || '?'} étendu +${created}j`, person?.display_name);
+    toast.success(`Affectation étendue sur ${created} jour(s)`);
+  }, [addMultipleAssignments, saveSnapshot, people, activeProjects, addActivity]);
 
   const handleToggleSelectPerson = useCallback((personId: string) => {
     setSelectedPersonIds(prev => 
@@ -737,6 +818,25 @@ export const PlanningPage = () => {
           </button>
 
           <DensitySelector density={density} onChange={setDensity} />
+
+          <div className="flex items-center gap-0.5 bg-secondary rounded-lg p-0.5">
+            <button
+              onClick={() => setCellWidth(w => Math.max(80, w - 20))}
+              className="p-1.5 text-muted-foreground hover:text-foreground rounded-md transition-colors disabled:opacity-30"
+              title="Réduire les colonnes"
+              disabled={cellWidth <= 80}
+            >
+              <ZoomOut className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => setCellWidth(w => Math.min(220, w + 20))}
+              className="p-1.5 text-muted-foreground hover:text-foreground rounded-md transition-colors disabled:opacity-30"
+              title="Agrandir les colonnes"
+              disabled={cellWidth >= 220}
+            >
+              <ZoomIn className="w-4 h-4" />
+            </button>
+          </div>
         </div>
 
         {/* Occupancy panel */}
@@ -813,6 +913,10 @@ export const PlanningPage = () => {
           onToggleSelectPerson={isAdmin ? handleToggleSelectPerson : () => {}}
           showCheckboxes={isAdmin && showCheckboxes}
           holidays={holidays}
+          onDropAssignment={isAdmin ? handleDropAssignment : undefined}
+          onResizeAssignment={isAdmin ? handleResizeAssignment : undefined}
+          enableDrag={isAdmin}
+          cellWidth={cellWidth}
         />}
 
         {/* Legend */}

@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Assignment, DayData, SlotType, Task, TASK_STATUS_COLORS } from '@/types/planning';
 import { AssignmentChip } from './AssignmentChip';
 import { AbsenceBadge } from './AbsenceBadge';
@@ -21,6 +22,9 @@ interface DayCellProps {
   onTaskClick?: (task: Task) => void;
   onContextMenu?: (e: React.MouseEvent) => void;
   density?: DensityMode;
+  onDropAssignment?: (assignmentId: string, targetDate: string, targetSlot: SlotType) => void;
+  onResizeAssignment?: (data: { personId: string; projectId: string; fromDate: string; toDate: string; slot: string; comment: string; moId: string }) => void;
+  enableDrag?: boolean;
 }
 
 const DENSITY_CONFIG = {
@@ -44,21 +48,62 @@ interface SlotHalfProps {
   onCellClick: () => void;
   onRemoveAssignment: (id: string) => void;
   onContextMenu?: (e: React.MouseEvent) => void;
+  onDrop?: (assignmentId: string, slot: 'AM' | 'PM') => void;
+  onResizeDrop?: (data: { personId: string; projectId: string; fromDate: string; toDate: string; slot: string; comment: string; moId: string }) => void;
+  enableDrag?: boolean;
+  date: string;
 }
 
 const SlotHalf = ({
   slot, assignments, label, minH, maxVisible, chipCompact,
   isToday, isEmpty, onCellClick, onRemoveAssignment, onContextMenu,
+  onDrop: onDropHandler, onResizeDrop, enableDrag, date,
 }: SlotHalfProps) => {
   const visible = assignments.slice(0, maxVisible);
   const hidden = assignments.length - maxVisible;
+  const [dragOver, setDragOver] = useState(false);
+
+  const handleDragOver = (e: React.DragEvent) => {
+    const isMove = e.dataTransfer.types.includes('application/assignment-id');
+    const isResize = e.dataTransfer.types.includes('application/resize-assignment-id');
+    if (!isMove && !isResize) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = isResize ? 'copy' : 'move';
+    setDragOver(true);
+  };
+  const handleDragLeave = () => setDragOver(false);
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setDragOver(false);
+    // Resize drop
+    const resizeId = e.dataTransfer.getData('application/resize-assignment-id');
+    if (resizeId && onResizeDrop) {
+      onResizeDrop({
+        personId: e.dataTransfer.getData('application/resize-person-id'),
+        projectId: e.dataTransfer.getData('application/resize-project-id'),
+        fromDate: e.dataTransfer.getData('application/resize-date'),
+        toDate: date,
+        slot: e.dataTransfer.getData('application/resize-slot'),
+        comment: e.dataTransfer.getData('application/resize-comment'),
+        moId: e.dataTransfer.getData('application/resize-mo-id'),
+      });
+      return;
+    }
+    // Move drop
+    const assignmentId = e.dataTransfer.getData('application/assignment-id');
+    if (assignmentId && onDropHandler) onDropHandler(assignmentId, slot);
+  };
 
   return (
     <div
       onClick={onCellClick}
       onContextMenu={onContextMenu}
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
       className={`${minH} px-1 py-0.5 cursor-pointer group/slot relative transition-all duration-100
-                 hover:bg-primary/5 flex flex-col gap-0.5`}
+                 hover:bg-primary/5 flex flex-col gap-0.5
+                 ${dragOver ? 'ring-2 ring-inset ring-primary/50 bg-primary/10' : ''}`}
     >
       <div className="flex items-center justify-between">
         <span className={`text-[9px] font-semibold uppercase tracking-wider leading-none
@@ -84,6 +129,8 @@ const SlotHalf = ({
             index={index}
             compact={chipCompact}
             onRemove={() => onRemoveAssignment(assignment.id)}
+            draggable={enableDrag}
+            enableResize={enableDrag}
           />
         ))}
       </AnimatePresence>
@@ -98,7 +145,7 @@ const SlotHalf = ({
 
 export const DayCell = ({
   date, data, isToday, isWeekend = false, onCellClick, onRemoveAssignment, onTaskClick, onContextMenu,
-  density = 'comfort',
+  density = 'comfort', onDropAssignment, onResizeAssignment, enableDrag = false,
 }: DayCellProps) => {
   const hasAbsence = data.absence !== null;
   const config = DENSITY_CONFIG[density];
@@ -145,6 +192,10 @@ export const DayCell = ({
               onCellClick={() => onCellClick('AM')}
               onRemoveAssignment={onRemoveAssignment}
               onContextMenu={handleContextMenu}
+              onDrop={onDropAssignment ? (aId, s) => onDropAssignment(aId, date, s === 'AM' ? 'AM' : 'PM') : undefined}
+              onResizeDrop={onResizeAssignment}
+              enableDrag={enableDrag}
+              date={date}
             />
           )}
           <div className="h-px bg-border/50 mx-1" />
@@ -166,6 +217,10 @@ export const DayCell = ({
               onCellClick={() => onCellClick('PM')}
               onRemoveAssignment={onRemoveAssignment}
               onContextMenu={handleContextMenu}
+              onDrop={onDropAssignment ? (aId, s) => onDropAssignment(aId, date, s === 'AM' ? 'AM' : 'PM') : undefined}
+              onResizeDrop={onResizeAssignment}
+              enableDrag={enableDrag}
+              date={date}
             />
           )}
         </>

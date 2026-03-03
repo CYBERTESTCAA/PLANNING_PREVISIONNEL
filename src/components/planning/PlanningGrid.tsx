@@ -1,3 +1,4 @@
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { PersonPlanningData, SlotType, Task } from '@/types/planning';
 import { PersonRow } from './PersonRow';
 import { DensityMode } from './DayCell';
@@ -21,6 +22,10 @@ interface PlanningGridProps {
   onToggleSelectPerson?: (personId: string) => void;
   showCheckboxes?: boolean;
   holidays?: Record<string, HolidayInfo>;
+  onDropAssignment?: (assignmentId: string, targetDate: string, targetSlot: SlotType) => void;
+  onResizeAssignment?: (data: { personId: string; projectId: string; fromDate: string; toDate: string; slot: string; comment: string; moId: string }) => void;
+  enableDrag?: boolean;
+  cellWidth?: number;
 }
 
 export const PlanningGrid = ({
@@ -28,7 +33,66 @@ export const PlanningGrid = ({
   density = 'comfort',
   selectedPersonIds = [], onToggleSelectPerson, showCheckboxes = false,
   holidays = {},
+  onDropAssignment, onResizeAssignment, enableDrag = false,
+  cellWidth = 130,
 }: PlanningGridProps) => {
+  // ── Column resize state ──────────────────────────────────────────────
+  const [colWidths, setColWidths] = useState<Record<number, number>>({});
+  const resizeRef = useRef<{ colIdx: number; startX: number; startW: number } | null>(null);
+  const [rowHeights, setRowHeights] = useState<Record<number, number>>({});
+  const rowResizeRef = useRef<{ rowIdx: number; startY: number; startH: number } | null>(null);
+
+  const getColWidth = useCallback((idx: number) => colWidths[idx] ?? cellWidth, [colWidths, cellWidth]);
+
+  // Reset column widths when cellWidth (zoom) changes
+  useEffect(() => { setColWidths({}); }, [cellWidth]);
+
+  const getRowHeight = useCallback((idx: number) => rowHeights[idx] ?? 0, [rowHeights]); // 0 = auto
+
+  const onRowResizeStart = useCallback((rowIdx: number, startY: number, currentH: number) => {
+    rowResizeRef.current = { rowIdx, startY, startH: currentH };
+    document.body.style.cursor = 'row-resize';
+    document.body.style.userSelect = 'none';
+  }, []);
+
+  const onResizeMouseDown = useCallback((colIdx: number, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    resizeRef.current = { colIdx, startX: e.clientX, startW: colWidths[colIdx] ?? cellWidth };
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+  }, [colWidths, cellWidth]);
+
+  useEffect(() => {
+    const onMouseMove = (e: MouseEvent) => {
+      if (resizeRef.current) {
+        const { colIdx, startX, startW } = resizeRef.current;
+        const delta = e.clientX - startX;
+        const newW = Math.max(60, Math.min(400, startW + delta));
+        setColWidths(prev => ({ ...prev, [colIdx]: newW }));
+      }
+      if (rowResizeRef.current) {
+        const { rowIdx, startY, startH } = rowResizeRef.current;
+        const delta = e.clientY - startY;
+        const newH = Math.max(50, Math.min(400, startH + delta));
+        setRowHeights(prev => ({ ...prev, [rowIdx]: newH }));
+      }
+    };
+    const onMouseUp = () => {
+      if (resizeRef.current) {
+        resizeRef.current = null;
+      }
+      if (rowResizeRef.current) {
+        rowResizeRef.current = null;
+      }
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    };
+    window.addEventListener('mousemove', onMouseMove);
+    window.addEventListener('mouseup', onMouseUp);
+    return () => { window.removeEventListener('mousemove', onMouseMove); window.removeEventListener('mouseup', onMouseUp); };
+  }, []);
+
   if (data.length === 0) {
     return (
       <div className="flex items-center justify-center h-64 text-muted-foreground">
@@ -43,11 +107,17 @@ export const PlanningGrid = ({
       animate={{ opacity: 1 }}
       className="overflow-x-auto border border-grid-border rounded-xl bg-card shadow-sm"
     >
-      <table className="planning-grid w-full">
+      <table className="planning-grid" style={{ tableLayout: 'fixed' }}>
+        <colgroup>
+          <col style={{ width: '200px', minWidth: '180px' }} />
+          {dates.map((_, idx) => (
+            <col key={idx} style={{ width: `${getColWidth(idx)}px` }} />
+          ))}
+        </colgroup>
         <thead>
           <tr>
             <th className="sticky left-0 z-20 bg-grid-header text-grid-header-foreground 
-                          min-w-[180px] max-w-[220px] text-left px-3 py-3 border-r border-grid-border">
+                          text-left px-3 py-3 border-r border-grid-border">
               <div className="flex items-center gap-2">
                 {showCheckboxes && (
                   <input
@@ -71,7 +141,7 @@ export const PlanningGrid = ({
               </div>
             </th>
 
-            {dates.map((date) => {
+            {dates.map((date, colIdx) => {
               const isTodayDate = isToday(date);
               const isWknd = isWeekend(date);
               const dateStr = formatDate(date);
@@ -80,7 +150,7 @@ export const PlanningGrid = ({
               return (
                 <th
                   key={dateStr}
-                  className={`min-w-[130px] text-center py-2 px-1 border-r border-grid-border last:border-r-0
+                  className={`relative text-center py-2 px-1 border-r border-grid-border last:border-r-0
                              ${isTodayDate ? 'bg-primary text-primary-foreground' : isHoliday ? 'bg-red-50 dark:bg-red-950/30 text-red-600 dark:text-red-400' : isWknd ? 'bg-muted/60 text-muted-foreground' : 'bg-grid-header text-grid-header-foreground'}`}
                 >
                   <div className="flex flex-col items-center gap-0.5">
@@ -102,6 +172,12 @@ export const PlanningGrid = ({
                       </div>
                     ) : null}
                   </div>
+                  {/* Resize handle */}
+                  <div
+                    onMouseDown={(e) => onResizeMouseDown(colIdx, e)}
+                    className="absolute right-0 top-0 bottom-0 w-1.5 cursor-col-resize z-10
+                               hover:bg-primary/30 active:bg-primary/50 transition-colors"
+                  />
                 </th>
               );
             })}
@@ -123,6 +199,11 @@ export const PlanningGrid = ({
               isSelected={selectedPersonIds.includes(personData.person.id)}
               onToggleSelect={onToggleSelectPerson}
               showCheckbox={showCheckboxes}
+              onDropAssignment={onDropAssignment}
+              onResizeAssignment={onResizeAssignment}
+              enableDrag={enableDrag}
+              rowHeight={getRowHeight(index)}
+              onRowResizeStart={(startY, currentH) => onRowResizeStart(index, startY, currentH)}
             />
           ))}
         </tbody>

@@ -596,21 +596,44 @@ async function syncSalaries(
       }
     }
 
-    // Delete all existing employees and re-create (clean sync, avoids upsert issues)
-    // Cascade deletes assignments/absences via Prisma schema
-    await prisma.timeEntry.deleteMany();
-    await prisma.assignment.deleteMany();
-    await prisma.absence.deleteMany();
-    await prisma.employee.deleteMany();
-
-    // Batch create in chunks of 200
-    const CHUNK = 200;
-    for (let i = 0; i < batch.length; i += CHUNK) {
-      await prisma.employee.createMany({ data: batch.slice(i, i + CHUNK) });
+    // Upsert employees — PRESERVES assignments, absences, and workshop assignments
+    await prisma.timeEntry.deleteMany(); // time entries are re-synced from Fabric, safe to clear
+    let upserted = 0;
+    for (const emp of batch) {
+      await prisma.employee.upsert({
+        where: { subsidiaryId_code: { subsidiaryId: emp.subsidiaryId, code: emp.code } },
+        update: {
+          lastName: emp.lastName,
+          firstName: emp.firstName,
+          isActive: emp.isActive,
+          matriculeRH: emp.matriculeRH,
+          service: emp.service,
+          qualification: emp.qualification,
+          isInterim: emp.isInterim,
+          hireDate: emp.hireDate,
+          managerCode: emp.managerCode,
+          // Do NOT overwrite workshopId or teamId — those are managed by the user
+        },
+        create: {
+          subsidiaryId: emp.subsidiaryId,
+          workshopId: emp.workshopId,
+          code: emp.code,
+          lastName: emp.lastName,
+          firstName: emp.firstName,
+          isActive: emp.isActive,
+          matriculeRH: emp.matriculeRH,
+          service: emp.service,
+          qualification: emp.qualification,
+          isInterim: emp.isInterim,
+          hireDate: emp.hireDate,
+          managerCode: emp.managerCode,
+        },
+      });
+      upserted++;
     }
-    result.employees = batch.length;
+    result.employees = upserted;
 
-    console.log(`[sync] syncSalaries: ${batch.length} employees created, unmapped=[${[...unmappedCodes].join(',')}]`);
+    console.log(`[sync] syncSalaries: ${upserted} employees upserted, unmapped=[${[...unmappedCodes].join(',')}]`);
   } catch (err: any) {
     result.errors.push(`syncSalaries: ${err.message}`);
     console.error(`[sync] syncSalaries ERROR:`, err.message);

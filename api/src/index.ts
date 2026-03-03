@@ -17,6 +17,7 @@ import { timeEntryRoutes } from './routes/time-entries.js';
 import { calendarRoutes } from './routes/calendar.js';
 import { runFabricSync } from './services/fabricSync.js';
 import { ensureWarehouseTables } from './services/warehouseTables.js';
+import { runBackup } from './services/backup.js';
 import { attachUser, requireAdmin } from './middleware/auth.js';
 import cron from 'node-cron';
 
@@ -383,6 +384,22 @@ if (process.env.FABRIC_CLIENT_ID && process.env.FABRIC_CLIENT_ID !== 'VOTRE_CLIE
   });
   server.log.info(`🕐  Fabric sync cron scheduled: ${syncCron}`);
 }
+
+// ─── SQLite backup cron (every day at 02:00) ─────────────────────────────────
+const backupCron = process.env.BACKUP_CRON || '0 2 * * *';
+cron.schedule(backupCron, async () => {
+  server.log.info('💾  SQLite backup started (cron)');
+  const result = await runBackup(prisma);
+  if (result) server.log.info({ file: result.file, sizeKB: Math.round(result.sizeBytes / 1024) }, '✅  Backup done');
+});
+server.log.info(`💾  SQLite backup cron scheduled: ${backupCron}`);
+
+// Manual backup endpoint (admin only)
+server.post('/backup', async (req, reply) => {
+  const result = await runBackup(prisma);
+  if (!result) return reply.code(500).send({ message: 'Backup failed' });
+  return { ok: true, file: result.file, sizeBytes: result.sizeBytes };
+});
 
 // ─── Start ────────────────────────────────────────────────────────────────────
 const port = Number(process.env.PORT || 3001);
