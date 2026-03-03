@@ -46,10 +46,10 @@ export const AdminTeamsPage = () => {
     finally { setLoadingSub(prev => ({ ...prev, [subId]: false })); }
   }, [empsBySub, loadingSub, store.people]);
 
-  // Auto-load employees for the initially expanded subsidiary
+  // Auto-load employees for all subsidiaries on mount
   useEffect(() => {
-    if (expandedSubId) loadSub(expandedSubId);
-  }, [expandedSubId]); // eslint-disable-line react-hooks/exhaustive-deps
+    subsidiaries.forEach(sub => loadSub(sub.id));
+  }, [subsidiaries.length]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleExpandSub = (subId: string) => {
     const next = expandedSubId === subId ? null : subId;
