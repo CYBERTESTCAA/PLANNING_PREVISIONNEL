@@ -92,12 +92,8 @@ function AuthInner({ children }: { children: ReactNode }) {
       return response.idToken;
     } catch (err) {
       if (err instanceof InteractionRequiredAuthError) {
-        try {
-          const response = await instance.acquireTokenPopup(loginRequest);
-          return response.idToken;
-        } catch {
-          return null;
-        }
+        instance.acquireTokenRedirect(loginRequest);
+        return null;
       }
       return null;
     }
@@ -111,14 +107,14 @@ function AuthInner({ children }: { children: ReactNode }) {
 
   const login = useCallback(async () => {
     try {
-      await instance.loginPopup(loginRequest);
+      await instance.loginRedirect(loginRequest);
     } catch (err) {
       console.error('[Auth] Login failed:', err);
     }
   }, [instance]);
 
   const logout = useCallback(() => {
-    instance.logoutPopup({ postLogoutRedirectUri: window.location.origin });
+    instance.logoutRedirect({ postLogoutRedirectUri: window.location.origin });
   }, [instance]);
 
   return (
