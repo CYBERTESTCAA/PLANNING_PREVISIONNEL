@@ -12,6 +12,8 @@ interface AuthState {
   login: () => Promise<void>;
   logout: () => void;
   getAccessToken: () => Promise<string | null>;
+  /** true when MSAL is configured but can't run (HTTP without localhost) */
+  msalUnavailable: boolean;
 }
 
 const AuthContext = createContext<AuthState>({
@@ -22,6 +24,7 @@ const AuthContext = createContext<AuthState>({
   login: async () => {},
   logout: () => {},
   getAccessToken: async () => null,
+  msalUnavailable: false,
 });
 
 export const useAuth = () => useContext(AuthContext);
@@ -126,6 +129,7 @@ function AuthInner({ children }: { children: ReactNode }) {
       login,
       logout,
       getAccessToken: getAccessTokenSilent,
+      msalUnavailable: false,
     }}>
       {children}
     </AuthContext.Provider>
@@ -140,11 +144,12 @@ function NoAuthProvider({ children }: { children: ReactNode }) {
     <AuthContext.Provider value={{
       isAuthenticated: false,
       isAdmin: devMode,
-      userName: '',
-      userEmail: '',
+      userName: devMode ? 'Mode développement' : '',
+      userEmail: devMode ? 'localhost (pas d\'auth)' : '',
       login: async () => { console.warn('[Auth] MSAL not configured or non-secure context'); },
       logout: () => {},
       getAccessToken: async () => null,
+      msalUnavailable: msalEnabled && !msalInstance,
     }}>
       {children}
     </AuthContext.Provider>

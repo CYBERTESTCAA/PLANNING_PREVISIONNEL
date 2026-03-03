@@ -156,15 +156,16 @@ export const AssignmentModal = ({
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="modal-backdrop flex items-center justify-center p-4"
+        className="fixed inset-0 z-50 bg-black/30"
         onClick={handleClose}
       >
         <motion.div
-          initial={{ scale: 0.95, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          exit={{ scale: 0.95, opacity: 0 }}
-          className="bg-card rounded-2xl shadow-2xl w-full max-w-lg max-h-[80vh] 
-                     flex flex-col overflow-hidden border border-border"
+          initial={{ x: '100%' }}
+          animate={{ x: 0 }}
+          exit={{ x: '100%' }}
+          transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+          className="absolute right-0 top-0 bottom-0 w-full max-w-md bg-card shadow-2xl
+                     flex flex-col overflow-hidden border-l border-border"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
@@ -349,7 +350,7 @@ export const AssignmentModal = ({
               )}
 
 
-              <div ref={listRef} className="flex-1 overflow-y-auto px-5 py-2 max-h-[300px]">
+              <div ref={listRef} className="flex-1 overflow-y-auto px-5 py-2">
                 <div className="space-y-0.5">
                   {filteredProjects.map((project, index) => {
                     const isSelected = selectedProjectIds.includes(project.id);
