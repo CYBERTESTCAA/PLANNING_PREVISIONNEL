@@ -68,7 +68,6 @@ export async function extractUser(request: FastifyRequest): Promise<AuthUser | n
 
         const payload = decoded as Record<string, any>;
         const groups: string[] = payload.groups || [];
-        console.log('[auth] Token payload - oid:', payload.oid, 'groups:', groups, 'hasGroupsClaim:', !!payload.groups, '_claim_names:', payload._claim_names);
         const user: AuthUser = {
           oid: payload.oid || '',
           name: payload.name || '',
@@ -76,7 +75,6 @@ export async function extractUser(request: FastifyRequest): Promise<AuthUser | n
           groups,
           isAdmin: groups.includes(REQUIRED_GROUP_ID),
         };
-        console.log('[auth] isAdmin:', user.isAdmin, 'requiredGroup:', REQUIRED_GROUP_ID);
         resolve(user);
       },
     );

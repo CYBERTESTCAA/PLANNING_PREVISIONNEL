@@ -141,42 +141,6 @@ const Index = () => {
         </div>
       </header>
 
-      {/* Quick-start CTA when filiale selected */}
-      <AnimatePresence>
-        {selectedSubsidiaryId && (
-          <motion.div
-            initial={{ opacity: 0, y: -8 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -8 }}
-            className="bg-primary/5 border-b border-primary/20"
-          >
-            <div className="container mx-auto px-4 py-3 flex items-center justify-between gap-4">
-              <div className="flex items-center gap-2 text-sm text-foreground">
-                <Zap className="w-4 h-4 text-primary" />
-                <span>Filiale sélectionnée — où voulez-vous aller ?</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <button onClick={() => navigate('/planning')}
-                  className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-semibold hover:bg-primary/90 transition-colors">
-                  <HardHat className="w-4 h-4" />
-                  Planning
-                  <ArrowRight className="w-3.5 h-3.5" />
-                </button>
-                <button onClick={() => navigate('/gantt')}
-                  className="flex items-center gap-2 px-3 py-2 bg-secondary text-foreground rounded-lg text-sm font-medium hover:bg-secondary/80 transition-colors">
-                  <BarChart3 className="w-4 h-4" />
-                  Gantt
-                </button>
-                <button onClick={() => navigate('/chantier')}
-                  className="flex items-center gap-2 px-3 py-2 bg-secondary text-foreground rounded-lg text-sm font-medium hover:bg-secondary/80 transition-colors">
-                  <Building2 className="w-4 h-4" />
-                  Chantiers
-                </button>
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
 
       {/* Navigation Cards */}
       <main className="flex-1 container mx-auto px-4 py-12">
