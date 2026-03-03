@@ -129,101 +129,131 @@ export const AdminTeamsPage = () => {
         </div>
       </header>
 
-      <main className="container mx-auto px-4 py-6 space-y-4">
-        {workshops.length === 0 && (
-          <div className="text-center py-12 text-muted-foreground">Aucun atelier — lancez une synchronisation Fabric</div>
+      <main className="container mx-auto px-4 py-6 space-y-6">
+        {subsidiaries.length === 0 && (
+          <div className="text-center py-12 text-muted-foreground">Aucune filiale — lancez une synchronisation Fabric</div>
         )}
 
-        {workshops.sort((a, b) => a.name.localeCompare(b.name)).map(wk => {
-          const sub = subsidiaries.find(s => s.id === wk.subsidiary_id);
-          const subId = sub?.id ?? '';
-          const members = membersOf(subId, wk.id);
-          const isWkExpanded = expandedWorkshopId === wk.id;
-          const search = searchByWk[wk.id] ?? '';
-          const dropdownItems = suggestions(subId, wk.id, search);
+        {subsidiaries.map(sub => {
+          const subWorkshops = workshopsForSub(sub.id);
           return (
-            <div key={wk.id} className="bg-card border border-border rounded-xl overflow-hidden">
-              <div className="flex items-center gap-3 px-4 py-3">
-                <button onClick={() => setExpandedWorkshopId(isWkExpanded ? null : wk.id)} className="p-1 text-muted-foreground hover:text-foreground rounded">
-                  {isWkExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
-                </button>
-                {editingId === wk.id ? (
-                  <div className="flex items-center gap-2 flex-1">
-                    <input type="text" value={editName} onChange={e => setEditName(e.target.value)} autoFocus
-                      onKeyDown={e => { if (e.key === 'Enter') handleSaveEdit(wk.id); if (e.key === 'Escape') setEditingId(null); }}
-                      className="flex-1 px-2 py-1 bg-secondary rounded text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary" />
-                    <button onClick={() => handleSaveEdit(wk.id)} className="p-1 text-success hover:bg-success/10 rounded"><Check className="w-4 h-4" /></button>
-                    <button onClick={() => setEditingId(null)} className="p-1 text-muted-foreground hover:bg-secondary rounded"><X className="w-4 h-4" /></button>
-                  </div>
-                ) : (
-                  <button onClick={() => setExpandedWorkshopId(isWkExpanded ? null : wk.id)} className="flex-1 flex items-center gap-2 text-left">
-                    <span className="font-semibold text-foreground">{wk.name}</span>
-                    <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full">{members.length} personne{members.length !== 1 ? 's' : ''}</span>
-                  </button>
-                )}
-                <button onClick={() => { setEditingId(wk.id); setEditName(wk.name); }} className="p-2 text-muted-foreground hover:text-foreground hover:bg-secondary rounded-lg" title="Renommer">
-                  <Pencil className="w-3.5 h-3.5" />
-                </button>
-                <button onClick={() => handleDelete(wk.id)} className="p-2 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg" title="Supprimer">
-                  <Trash2 className="w-3.5 h-3.5" />
+            <div key={sub.id} className="space-y-3">
+              <div className="flex items-center gap-3">
+                <h2 className="text-lg font-bold text-foreground">{sub.name}</h2>
+                <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full">{subWorkshops.length} atelier(s)</span>
+                <button onClick={() => { setAddingForSubId(sub.id); }}
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors">
+                  <Plus className="w-3.5 h-3.5" />Nouvel atelier
                 </button>
               </div>
-              <AnimatePresence>
-                {isWkExpanded && (
-                  <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="border-t border-border">
-                    <div className="px-6 py-3 space-y-2">
-                      {members.length > 0 ? (
-                        <div className="space-y-1">
-                          {members.map(person => (
-                            <div key={person.id} className="flex items-center justify-between px-3 py-2 bg-muted/40 rounded-lg">
-                              <div className="flex items-center gap-2">
-                                {person.code && <span className="font-mono text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded">{person.code}</span>}
-                                <span className="text-sm text-foreground">{person.display_name}</span>
-                              </div>
-                              <button onClick={() => handleRemove(subId, person)} title="Retirer de l'atelier" className="p-1.5 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg transition-colors">
-                                <UserX className="w-3.5 h-3.5" />
-                              </button>
-                            </div>
-                          ))}
-                        </div>
-                      ) : (
-                        <p className="text-sm text-muted-foreground italic">Aucun membre dans cet atelier</p>
-                      )}
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-2 px-3 py-2 bg-secondary rounded-lg border border-border focus-within:ring-2 focus-within:ring-primary/50">
-                          <UserPlus className="w-4 h-4 text-muted-foreground shrink-0" />
-                          <input
-                            ref={el => { searchRefs.current[wk.id] = el; }}
-                            type="text" placeholder="Affecter une personne à cet atelier…"
-                            value={search}
-                            onChange={e => { setSearchByWk(prev => ({ ...prev, [wk.id]: e.target.value })); setShowDropdown(wk.id); }}
-                            onFocus={() => setShowDropdown(wk.id)}
-                            onBlur={() => setTimeout(() => setShowDropdown(null), 150)}
-                            className="flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground focus:outline-none"
-                          />
-                          {search && <button onMouseDown={e => e.preventDefault()} onClick={() => setSearchByWk(prev => ({ ...prev, [wk.id]: '' }))} className="text-muted-foreground hover:text-foreground"><X className="w-3.5 h-3.5" /></button>}
-                        </div>
-                        {showDropdown === wk.id && (
-                          <div className="bg-card border border-border rounded-lg max-h-52 overflow-y-auto">
-                            {dropdownItems.length === 0
-                              ? <div className="px-3 py-2 text-sm text-muted-foreground italic">Aucun résultat</div>
-                              : dropdownItems.map(person => (
-                                <button key={person.id} onMouseDown={e => e.preventDefault()} onClick={() => handleAssign(subId, wk.id, person)}
-                                  className="w-full flex items-center gap-2 px-3 py-2 text-sm text-left hover:bg-accent transition-colors border-b border-border last:border-b-0">
-                                  {person.code && <span className="font-mono text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded shrink-0">{person.code}</span>}
-                                  <span className="flex-1 text-foreground">{person.display_name}</span>
-                                  <span className="text-xs text-muted-foreground">{workshops.find(w => w.id === person.workshop_id)?.name ?? ''}</span>
-                                  <Plus className="w-3.5 h-3.5 text-primary shrink-0" />
-                                </button>
-                              ))
-                            }
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </motion.div>
+
+              {addingForSubId === sub.id && (
+                <div className="flex gap-2 ml-4">
+                  <input type="text" value={newAtelierName} onChange={e => setNewAtelierName(e.target.value)}
+                    placeholder="Nom du nouvel atelier" autoFocus
+                    onKeyDown={e => { if (e.key === 'Enter') handleCreateAtelier(sub.id); if (e.key === 'Escape') { setAddingForSubId(null); setNewAtelierName(''); } }}
+                    className="flex-1 max-w-md px-3 py-2 bg-secondary rounded-lg text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary" />
+                  <button onClick={() => handleCreateAtelier(sub.id)} className="px-3 py-2 bg-primary text-primary-foreground text-sm rounded-lg hover:bg-primary/90">Créer</button>
+                  <button onClick={() => { setAddingForSubId(null); setNewAtelierName(''); }} className="px-3 py-2 bg-secondary text-foreground text-sm rounded-lg">Annuler</button>
+                </div>
+              )}
+
+              <div className="space-y-2 ml-4">
+                {subWorkshops.length === 0 && addingForSubId !== sub.id && (
+                  <p className="text-sm text-muted-foreground italic">Aucun atelier</p>
                 )}
-              </AnimatePresence>
+                {subWorkshops.map(wk => {
+                  const members = membersOf(sub.id, wk.id);
+                  const isWkExpanded = expandedWorkshopId === wk.id;
+                  const search = searchByWk[wk.id] ?? '';
+                  const dropdownItems = suggestions(sub.id, wk.id, search);
+                  return (
+                    <div key={wk.id} className="bg-card border border-border rounded-xl overflow-hidden">
+                      <div className="flex items-center gap-3 px-4 py-2.5">
+                        <button onClick={() => setExpandedWorkshopId(isWkExpanded ? null : wk.id)} className="p-1 text-muted-foreground hover:text-foreground rounded">
+                          {isWkExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+                        </button>
+                        {editingId === wk.id ? (
+                          <div className="flex items-center gap-2 flex-1">
+                            <input type="text" value={editName} onChange={e => setEditName(e.target.value)} autoFocus
+                              onKeyDown={e => { if (e.key === 'Enter') handleSaveEdit(wk.id); if (e.key === 'Escape') setEditingId(null); }}
+                              className="flex-1 px-2 py-1 bg-secondary rounded text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary" />
+                            <button onClick={() => handleSaveEdit(wk.id)} className="p-1 text-success hover:bg-success/10 rounded"><Check className="w-4 h-4" /></button>
+                            <button onClick={() => setEditingId(null)} className="p-1 text-muted-foreground hover:bg-secondary rounded"><X className="w-4 h-4" /></button>
+                          </div>
+                        ) : (
+                          <button onClick={() => setExpandedWorkshopId(isWkExpanded ? null : wk.id)} className="flex-1 flex items-center gap-2 text-left">
+                            <span className="font-medium text-foreground">{wk.name}</span>
+                            <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full">{members.length} personne{members.length !== 1 ? 's' : ''}</span>
+                          </button>
+                        )}
+                        <button onClick={() => { setEditingId(wk.id); setEditName(wk.name); }} className="p-2 text-muted-foreground hover:text-foreground hover:bg-secondary rounded-lg" title="Renommer">
+                          <Pencil className="w-3.5 h-3.5" />
+                        </button>
+                        <button onClick={() => handleDelete(wk.id)} className="p-2 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg" title="Supprimer">
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                      <AnimatePresence>
+                        {isWkExpanded && (
+                          <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="border-t border-border">
+                            <div className="px-6 py-3 space-y-2">
+                              {members.length > 0 ? (
+                                <div className="space-y-1">
+                                  {members.map(person => (
+                                    <div key={person.id} className="flex items-center justify-between px-3 py-2 bg-muted/40 rounded-lg">
+                                      <div className="flex items-center gap-2">
+                                        {person.code && <span className="font-mono text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded">{person.code}</span>}
+                                        <span className="text-sm text-foreground">{person.display_name}</span>
+                                      </div>
+                                      <button onClick={() => handleRemove(sub.id, person)} title="Retirer de l'atelier" className="p-1.5 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg transition-colors">
+                                        <UserX className="w-3.5 h-3.5" />
+                                      </button>
+                                    </div>
+                                  ))}
+                                </div>
+                              ) : (
+                                <p className="text-sm text-muted-foreground italic">Aucun membre dans cet atelier</p>
+                              )}
+                              <div className="space-y-1">
+                                <div className="flex items-center gap-2 px-3 py-2 bg-secondary rounded-lg border border-border focus-within:ring-2 focus-within:ring-primary/50">
+                                  <UserPlus className="w-4 h-4 text-muted-foreground shrink-0" />
+                                  <input
+                                    ref={el => { searchRefs.current[wk.id] = el; }}
+                                    type="text" placeholder="Affecter une personne à cet atelier…"
+                                    value={search}
+                                    onChange={e => { setSearchByWk(prev => ({ ...prev, [wk.id]: e.target.value })); setShowDropdown(wk.id); }}
+                                    onFocus={() => setShowDropdown(wk.id)}
+                                    onBlur={() => setTimeout(() => setShowDropdown(null), 150)}
+                                    className="flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground focus:outline-none"
+                                  />
+                                  {search && <button onMouseDown={e => e.preventDefault()} onClick={() => setSearchByWk(prev => ({ ...prev, [wk.id]: '' }))} className="text-muted-foreground hover:text-foreground"><X className="w-3.5 h-3.5" /></button>}
+                                </div>
+                                {showDropdown === wk.id && (
+                                  <div className="bg-card border border-border rounded-lg max-h-52 overflow-y-auto">
+                                    {dropdownItems.length === 0
+                                      ? <div className="px-3 py-2 text-sm text-muted-foreground italic">Aucun résultat</div>
+                                      : dropdownItems.map(person => (
+                                        <button key={person.id} onMouseDown={e => e.preventDefault()} onClick={() => handleAssign(sub.id, wk.id, person)}
+                                          className="w-full flex items-center gap-2 px-3 py-2 text-sm text-left hover:bg-accent transition-colors border-b border-border last:border-b-0">
+                                          {person.code && <span className="font-mono text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded shrink-0">{person.code}</span>}
+                                          <span className="flex-1 text-foreground">{person.display_name}</span>
+                                          <span className="text-xs text-muted-foreground">{workshops.find(w => w.id === person.workshop_id)?.name ?? ''}</span>
+                                          <Plus className="w-3.5 h-3.5 text-primary shrink-0" />
+                                        </button>
+                                      ))
+                                    }
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           );
         })}
