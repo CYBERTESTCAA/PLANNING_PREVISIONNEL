@@ -158,6 +158,8 @@ model Project {
   assignments         Assignment[]
   tasks               Task[]
   timeEntries         TimeEntry[]
+  plans               Plan[]
+  questions           Question[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -175,11 +177,29 @@ model ManufacturingOrder {
 
   project     Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
   assignments Assignment[]
+  articles    Article[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@unique([projectId, code])
+}
+
+/// Article = ligne rattachée à un OF (sync depuis IdArticle dans le warehouse)
+model Article {
+  id                   String  @id @default(uuid())
+  manufacturingOrderId String
+  code                 String              // IdArticle from warehouse
+  designation          String?
+  quantity             Float?
+
+  manufacturingOrder ManufacturingOrder @relation(fields: [manufacturingOrderId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([manufacturingOrderId, code])
+  @@index([manufacturingOrderId])
 }
 
 // ─── Planning ─────────────────────────────────────────────────────────────────
@@ -335,6 +355,156 @@ model SubsidiarySchedule {
   subsidiary Subsidiary @relation(fields: [subsidiaryId], references: [id], onDelete: Cascade)
 
   @@unique([subsidiaryId, dayOfWeek])
+}
+
+// ─── Liste de Plans ──────────────────────────────────────────────────────────
+
+enum EtatAvancement {
+  A_DIFFUSER
+  DIFFUSE_ARCHI
+  EN_ATTENTE
+  EN_COURS_PLAN
+  SUPPRIME
+  VALIDE
+  A_MODIFIER
+  A_FAIRE
+}
+
+enum EtatUsinage {
+  EN_DEBIT
+  PROGRAMME
+  USINE
+}
+
+enum FabricationType {
+  FILIALE
+  SOUS_TRAITANT
+  LES_DEUX
+}
+
+enum QuestionAvancement {
+  NON_TRAITE
+  EN_COURS_Q
+  TERMINE
+}
+
+model Dessinateur {
+  id        String  @id @default(uuid())
+  nom       String
+  prenom    String
+  societe   String
+  isActive  Boolean @default(true)
+
+  plans Plan[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+/// A Plan = one line in "Liste de Plans" — one article/plan for one OF of one project
+model Plan {
+  id             String  @id @default(uuid())
+  projectId      String
+  hk             String            // NumLig warehouse key
+  numPhase       String?
+  numPhaseOF     String?
+  codeOF         String?           // OF code from warehouse
+
+  // Cartouches (manual)
+  numPlan        String?
+  cart1          String?
+  cart2          String?
+  cart3          String?
+  cart4          String?
+  cart5          String?
+  cart6          String?
+  cart7          String?
+
+  // Assignment (manual)
+  dessinateurId  String?
+  fabricationType FabricationType?
+
+  // Status
+  etatAvancement EtatAvancement @default(A_FAIRE)
+
+  // Dates
+  datePrevisionnelle DateTime?
+  dateValidation     DateTime?
+
+  // Fabrication
+  numFiche          String?
+  dateFicheFab      DateTime?
+  sousTraitance     String?
+  etatUsinage       EtatUsinage?
+  responsableMontage String?
+  dateDepartAtelier  DateTime?
+  paletisation       String?
+  dateLivraisonChantier DateTime?
+  commentaires       String?
+
+  project     Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  dessinateur Dessinateur? @relation(fields: [dessinateurId], references: [id], onDelete: SetNull)
+  indices     PlanIndice[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([projectId, hk])
+  @@index([projectId])
+  @@index([etatAvancement])
+}
+
+model PlanIndice {
+  id          String   @id @default(uuid())
+  planId      String
+  indice      String   // A, B, C, ...
+  dateIndice  DateTime
+  commentaire String?
+
+  plan Plan @relation(fields: [planId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@unique([planId, indice])
+  @@index([planId])
+}
+
+model Question {
+  id            String  @id @default(uuid())
+  projectId     String
+  designation   String
+  zone          String?
+  question      String
+  auteur        String?
+  destinataire  String?
+  dateQuestion  DateTime @default(now())
+  reponse       String?
+  dateReponse   DateTime?
+  avancement    QuestionAvancement @default(NON_TRAITE)
+
+  project     Project              @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  attachments QuestionAttachment[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([projectId])
+  @@index([avancement])
+}
+
+model QuestionAttachment {
+  id         String   @id @default(uuid())
+  questionId String
+  filename   String
+  mimeType   String
+  size       Int
+  path       String
+
+  question Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@index([questionId])
 }
 
 // ─── Tasks ────────────────────────────────────────────────────────────────────

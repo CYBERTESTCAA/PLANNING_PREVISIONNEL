@@ -800,7 +800,7 @@ async function syncCommandes(
   }
 }
 
-// ─── 6a. OF → ManufacturingOrders ────────────────────────────────────────────
+// ─── 6a. OF → ManufacturingOrders + Articles ────────────────────────────────
 async function syncOF(
   pool: sql.ConnectionPool,
   prisma: PrismaClient,
@@ -814,24 +814,45 @@ async function syncOF(
     }>(`SELECT DISTINCT [Code OF], [Code commande client], [IdArticle]
         FROM [Dépense temps passé]`);
 
+    // Group by (projectCode, ofCode) → set of articles
+    const ofMap = new Map<string, { projectCode: string; ofCode: string; articles: Set<string> }>();
     for (const row of rows.recordset) {
-      const code = row['Code OF']?.trim();
+      const ofCode = row['Code OF']?.trim();
       const projectCode = row['Code commande client']?.trim();
-      if (!code || !projectCode) continue;
+      if (!ofCode || !projectCode) continue;
+      const key = `${projectCode}::${ofCode}`;
+      if (!ofMap.has(key)) ofMap.set(key, { projectCode, ofCode, articles: new Set() });
+      const articleCode = row['IdArticle']?.trim();
+      if (articleCode) ofMap.get(key)!.articles.add(articleCode);
+    }
 
-      const project = await prisma.project.findFirst({ where: { code: projectCode } });
+    for (const [, data] of ofMap) {
+      const project = await prisma.project.findFirst({ where: { code: data.projectCode } });
       if (!project) continue;
 
-      await prisma.manufacturingOrder.upsert({
-        where: { projectId_code: { projectId: project.id, code } },
+      const mo = await prisma.manufacturingOrder.upsert({
+        where: { projectId_code: { projectId: project.id, code: data.ofCode } },
         update: {},
         create: {
           project: { connect: { id: project.id } },
-          code,
-          label: row['IdArticle']?.trim() ?? code,
+          code: data.ofCode,
+          label: data.ofCode,
         },
       });
       result.manufacturingOrders++;
+
+      // Upsert articles for this OF
+      for (const articleCode of data.articles) {
+        await (prisma.article as any).upsert({
+          where: { manufacturingOrderId_code: { manufacturingOrderId: mo.id, code: articleCode } },
+          update: {},
+          create: {
+            manufacturingOrderId: mo.id,
+            code: articleCode,
+            designation: articleCode,
+          },
+        });
+      }
     }
   } catch (err: any) {
     result.errors.push(`syncOF: ${err.message}`);

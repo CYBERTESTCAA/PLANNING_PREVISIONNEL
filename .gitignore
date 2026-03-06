@@ -20,6 +20,9 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
+# Uploaded files
+api/uploads
+
 # SQLite database files
 api/*.sqlite
 api/*.sqlite-journal

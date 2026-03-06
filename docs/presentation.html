@@ -1,0 +1,1281 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Suivi de Chantiers — Presentation Technique</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--blue:#2563eb;--blue-d:#1e293b;--blue-l:#dbeafe;--green:#059669;--green-l:#d1fae5;--orange:#ea580c;--orange-l:#ffedd5;--red:#dc2626;--red-l:#fee2e2;--purple:#7c3aed;--purple-l:#ede9fe;--g50:#f8fafc;--g100:#f1f5f9;--g200:#e2e8f0;--g400:#94a3b8;--g500:#64748b;--g600:#475569;--g800:#1e293b;--g900:#0f172a;--r:12px}
+html{scroll-behavior:smooth}
+body{font-family:'Segoe UI',system-ui,sans-serif;color:var(--g800);background:#fff;line-height:1.6;overflow-x:hidden}
+nav{position:fixed;top:0;left:0;right:0;z-index:100;background:rgba(15,23,42,.95);backdrop-filter:blur(12px);border-bottom:1px solid rgba(255,255,255,.1)}
+.nav-inner{max-width:1200px;margin:0 auto;padding:0 24px;display:flex;align-items:center;height:56px}
+.nav-logo{font-weight:800;color:#fff;white-space:nowrap}.nav-logo span{color:var(--blue)}
+.nav-links{display:flex;gap:2px;margin-left:auto;flex-wrap:wrap}
+.nav-links a{color:#94a3b8;text-decoration:none;font-size:.78rem;padding:6px 10px;border-radius:6px;transition:.2s}
+.nav-links a:hover,.nav-links a.active{color:#fff;background:rgba(37,99,235,.3)}
+.menu-btn{display:none;background:none;border:none;color:#fff;font-size:1.4rem;cursor:pointer;margin-left:auto}
+@media(max-width:900px){.nav-links{display:none;position:absolute;top:56px;left:0;right:0;background:var(--g900);flex-direction:column;padding:12px}.nav-links.open{display:flex}.menu-btn{display:block}}
+section{padding:72px 24px}section:nth-child(even){background:var(--g50)}
+.container{max-width:1100px;margin:0 auto}
+.section-hdr{text-align:center;margin-bottom:48px}
+.badge{display:inline-block;padding:4px 14px;border-radius:20px;font-size:.78rem;font-weight:600;margin-bottom:10px}
+.section-hdr h2{font-size:clamp(1.6rem,4vw,2.3rem);font-weight:800;color:var(--g900);margin-bottom:10px}
+.section-hdr p{font-size:1rem;color:var(--g500);max-width:600px;margin:0 auto}
+.hero{min-height:100vh;display:flex;align-items:center;justify-content:center;text-align:center;background:linear-gradient(135deg,var(--g900),#1e3a5f,var(--blue));color:#fff;padding:80px 24px 60px;position:relative}
+.hero h1{font-size:clamp(2.2rem,5vw,3.5rem);font-weight:900;margin-bottom:14px}
+.hero h1 span{background:linear-gradient(135deg,#60a5fa,#a78bfa);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.hero p{font-size:clamp(.95rem,2vw,1.2rem);color:rgba(255,255,255,.7);max-width:650px;margin:0 auto 28px}
+.hero-badges{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-bottom:36px}
+.hero-badges span{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);padding:5px 14px;border-radius:20px;font-size:.82rem;color:rgba(255,255,255,.8)}
+.btn{display:inline-flex;align-items:center;gap:8px;background:var(--blue);color:#fff;padding:12px 28px;border-radius:10px;font-size:1rem;font-weight:600;text-decoration:none;transition:.3s;border:none;cursor:pointer}
+.btn:hover{transform:translateY(-2px);box-shadow:0 8px 20px rgba(37,99,235,.4)}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:20px}
+.grid3{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:20px}
+.grid4{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px}
+.card{background:#fff;border:1px solid var(--g200);border-radius:var(--r);padding:24px;box-shadow:0 2px 8px rgba(0,0,0,.06);transition:.3s}
+.card:hover{transform:translateY(-3px);box-shadow:0 8px 20px rgba(0,0,0,.1)}
+.card-icon{width:44px;height:44px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.4rem;margin-bottom:14px}
+.card h3{font-size:1.05rem;font-weight:700;margin-bottom:6px}
+.card p,.card li{font-size:.88rem;color:var(--g600);line-height:1.65}
+.card ul{list-style:none;padding:0}.card li{padding:3px 0 3px 18px;position:relative}.card li::before{content:'→';position:absolute;left:0;color:var(--blue)}
+.analogy{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+@media(max-width:900px){.analogy{grid-template-columns:1fr 1fr}}
+@media(max-width:500px){.analogy{grid-template-columns:1fr}}
+.an-card{text-align:center;padding:28px 16px;border-radius:var(--r);cursor:default;transition:.3s;border:2px solid transparent}
+.an-card:hover{transform:translateY(-4px)}
+.an-card .emoji{font-size:2.8rem;display:block;margin-bottom:10px}
+.an-card h4{font-size:1rem;font-weight:700;margin-bottom:2px}
+.an-card .real{font-size:.75rem;font-weight:600;margin-bottom:6px}
+.an-card p{font-size:.82rem;line-height:1.5}
+.flow{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;padding:32px 0;gap:0}
+.flow-s{display:flex;flex-direction:column;align-items:center;text-align:center;padding:12px;min-width:100px;max-width:140px}
+.flow-s .circ{width:56px;height:56px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.4rem;margin-bottom:6px;transition:.3s;cursor:pointer}
+.flow-s .circ:hover{transform:scale(1.15)}
+.flow-s h5{font-size:.8rem;font-weight:700;margin-bottom:1px}
+.flow-s small{font-size:.68rem;color:var(--g500)}
+.flow-a{font-size:1.3rem;color:var(--g400);padding:0 2px}
+@media(max-width:700px){.flow-a{display:none}.flow{gap:6px}}
+.tool-box{display:grid;grid-template-columns:1fr 1fr;gap:28px;margin-bottom:40px;padding:28px;background:#fff;border-radius:var(--r);border:1px solid var(--g200);box-shadow:0 2px 8px rgba(0,0,0,.06)}
+@media(max-width:700px){.tool-box{grid-template-columns:1fr}}
+.tool-box h3{font-size:1.25rem;font-weight:800;margin-bottom:3px}
+.tool-box .sub{font-size:.85rem;color:var(--g500);margin-bottom:14px}
+.tool-box p{font-size:.9rem;color:var(--g600);line-height:1.7;margin-bottom:12px}
+.tool-r{background:var(--g50);border-radius:var(--r);padding:20px}
+.tool-r h4{font-size:.9rem;font-weight:700;margin-bottom:10px;color:var(--g600)}
+.tool-r ul{list-style:none;padding:0}.tool-r li{padding:5px 0 5px 22px;position:relative;font-size:.85rem;color:var(--g600)}.tool-r li::before{content:'✓';position:absolute;left:0;color:var(--green);font-weight:700}
+.info{padding:16px 20px;border-radius:var(--r);margin:16px 0;display:flex;gap:10px;align-items:flex-start}
+.info.bl{background:var(--blue-l);border-left:4px solid var(--blue)}
+.info.gr{background:var(--green-l);border-left:4px solid var(--green)}
+.info.or{background:var(--orange-l);border-left:4px solid var(--orange)}
+.info .ic{font-size:1.2rem;flex-shrink:0}.info p{font-size:.88rem;color:var(--g600)}
+.acc{border:1px solid var(--g200);border-radius:var(--r);overflow:hidden;margin-bottom:12px}
+.acc-h{width:100%;padding:16px 20px;background:#fff;border:none;cursor:pointer;display:flex;align-items:center;gap:10px;font-size:.95rem;font-weight:600;color:var(--g800);text-align:left;transition:.2s}
+.acc-h:hover{background:var(--g50)}.acc-h .ar{margin-left:auto;transition:.3s;font-size:.75rem}
+.acc.open .ar{transform:rotate(180deg)}
+.acc-b{max-height:0;overflow:hidden;transition:max-height .4s ease}
+.acc.open .acc-b{max-height:800px}
+.acc-c{padding:0 20px 16px;font-size:.88rem;color:var(--g600);line-height:1.8}
+.acc-c code{background:var(--g100);padding:2px 6px;border-radius:4px;font-size:.82rem;font-family:Consolas,monospace}
+.mono-box{background:var(--g900);border-radius:var(--r);padding:24px;margin:24px 0;overflow-x:auto;color:#94a3b8;font-family:Consolas,monospace;font-size:.82rem;line-height:1.7;white-space:pre}
+.tl{position:relative;padding:16px 0}.tl::before{content:'';position:absolute;left:22px;top:0;bottom:0;width:3px;background:var(--blue-l);border-radius:2px}
+.tl-item{display:flex;gap:16px;margin-bottom:20px;position:relative}
+.tl-dot{width:14px;height:14px;border-radius:50%;background:var(--blue);border:3px solid var(--blue-l);margin-top:4px;flex-shrink:0;position:relative;left:16px;z-index:1}
+.tl-c{background:#fff;border:1px solid var(--g200);border-radius:var(--r);padding:16px;flex:1;margin-left:10px}
+.tl-c h4{font-size:.92rem;font-weight:700;margin-bottom:3px}.tl-c p{font-size:.84rem;color:var(--g600)}
+footer{background:var(--g900);color:var(--g400);padding:40px 24px;text-align:center}
+footer h3{color:#fff;font-size:1.2rem;margin-bottom:6px}footer p{font-size:.85rem;margin-bottom:3px}footer a{color:var(--blue);text-decoration:none}
+.reveal{opacity:0;transform:translateY(24px);transition:all .5s ease}.reveal.visible{opacity:1;transform:translateY(0)}
+.d1{transition-delay:.1s}.d2{transition-delay:.2s}.d3{transition-delay:.3s}
+.code-block{background:var(--g900);border-radius:var(--r);padding:20px 24px;margin:12px 0;overflow-x:auto;font-family:Consolas,'Courier New',monospace;font-size:.82rem;line-height:1.7;color:#e2e8f0;border:1px solid rgba(255,255,255,.1)}
+.code-block .kw{color:#c084fc}.code-block .fn{color:#60a5fa}.code-block .str{color:#86efac}.code-block .cm{color:#64748b;font-style:italic}.code-block .tp{color:#fbbf24}.code-block .tag{color:#f472b6}.code-block .attr{color:#67e8f9}.code-block .num{color:#fb923c}
+.tech-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin:20px 0}
+@media(max-width:700px){.tech-grid{grid-template-columns:1fr}}
+.tech-label{display:inline-block;padding:2px 8px;border-radius:4px;font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px}
+.dep-table{width:100%;border-collapse:collapse;font-size:.82rem;margin:12px 0}
+.dep-table th{text-align:left;padding:8px 12px;background:var(--g100);color:var(--g600);font-weight:600;border-bottom:2px solid var(--g200)}
+.dep-table td{padding:8px 12px;border-bottom:1px solid var(--g200);color:var(--g600)}
+.dep-table tr:hover td{background:var(--g50)}
+.dep-table code{background:var(--g100);padding:1px 6px;border-radius:3px;font-size:.8rem}
+</style>
+</head>
+<body>
+<!-- NAV -->
+<nav id="navbar">
+ <div class="nav-inner">
+  <div class="nav-logo">Suivi Chantiers<span> CAA</span></div>
+  <button class="menu-btn" onclick="document.querySelector('.nav-links').classList.toggle('open')">&#9776;</button>
+  <div class="nav-links">
+   <a href="#app">L'appli</a>
+   <a href="#fonctionnement">Fonctionnement</a>
+   <a href="#outils">Outils</a>
+   <a href="#architecture">Architecture</a>
+   <a href="#donnees">Donnees</a>
+   <a href="#maj">Mise a jour</a>
+   <a href="#securite">Securite</a>
+   <a href="#pratique">Pratique</a>
+  </div>
+ </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero" id="top">
+ <div>
+  <h1>Suivi de Chantiers<br><span>Comment ca marche ?</span></h1>
+  <p>Presentation interactive de l'application, expliquee simplement pour tout le monde.</p>
+  <div class="hero-badges">
+   <span>React</span><span>Fastify</span><span>Docker</span><span>GitHub</span><span>Fabric</span><span>Azure AD</span>
+  </div>
+  <a href="#app" class="btn">Commencer la visite &#8595;</a>
+ </div>
+</section>
+
+<!-- ============ SECTION 1 : L'APPLICATION ============ -->
+<section id="app">
+ <div class="container">
+  <div class="section-hdr reveal">
+   <div class="badge" style="background:var(--blue-l);color:var(--blue)">Section 1</div>
+   <h2>L'application en bref</h2>
+   <p>Un site web interne pour planifier qui travaille sur quel chantier et suivre l'avancement.</p>
+  </div>
+  <div class="grid4">
+   <div class="card reveal"><div class="card-icon" style="background:var(--blue-l);color:var(--blue)">&#128197;</div><h3>Planning</h3><p>Affecter les employes sur les chantiers, matin ou apres-midi, sur une grille interactive.</p></div>
+   <div class="card reveal d1"><div class="card-icon" style="background:var(--green-l);color:var(--green)">&#128200;</div><h3>Vue Gantt</h3><p>Voir les dates de debut/fin de chaque chantier sur un calendrier visuel.</p></div>
+   <div class="card reveal d2"><div class="card-icon" style="background:var(--orange-l);color:var(--orange)">&#127959;</div><h3>Suivi Chantier</h3><p>Savoir qui intervient, quels articles sont concernes et ou en est le projet.</p></div>
+   <div class="card reveal d3"><div class="card-icon" style="background:var(--purple-l);color:var(--purple)">&#128100;</div><h3>Calendrier</h3><p>Voir le planning d'un employe : presences, absences, chantiers affectes.</p></div>
+   <div class="card reveal"><div class="card-icon" style="background:var(--blue-l);color:var(--blue)">&#128208;</div><h3>Plans</h3><p>Gerer les plans de fabrication lies aux commandes et ordres de fabrication.</p></div>
+   <div class="card reveal d1"><div class="card-icon" style="background:var(--green-l);color:var(--green)">&#10067;</div><h3>Questions</h3><p>Poser des questions sur un chantier, suivre les reponses, joindre des fichiers.</p></div>
+   <div class="card reveal d2"><div class="card-icon" style="background:var(--orange-l);color:var(--orange)">&#128230;</div><h3>Creation d'OF</h3><p>Regrouper les articles en ordres de fabrication avec des codes AA-ZZ.</p></div>
+   <div class="card reveal d3"><div class="card-icon" style="background:var(--red-l);color:var(--red)">&#9881;</div><h3>Administration</h3><p>Gerer les filiales, ateliers, equipes, personnel et chantiers.</p></div>
+  </div>
+  <div style="margin-top:40px" class="reveal">
+   <h3 style="text-align:center;margin-bottom:20px;font-size:1.2rem">Qui utilise l'application ?</h3>
+   <div class="grid3">
+    <div class="card" style="border-top:4px solid var(--blue)"><h3>&#128119; Chefs d'atelier</h3><p>Ils planifient les employes sur les chantiers au quotidien. Ils voient les absences et les disponibilites.</p></div>
+    <div class="card" style="border-top:4px solid var(--green)"><h3>&#128203; Responsables</h3><p>Ils suivent l'avancement global des chantiers via le Gantt, les dashboards et les questions.</p></div>
+    <div class="card" style="border-top:4px solid var(--orange)"><h3>&#128208; Bureau d'etudes</h3><p>Ils gerent les plans de fabrication, les OF, et posent/repondent aux questions techniques.</p></div>
+   </div>
+  </div>
+ </div>
+</section>
+
+<!-- ============ SECTION 2 : FONCTIONNEMENT ============ -->
+<section id="fonctionnement">
+ <div class="container">
+  <div class="section-hdr reveal">
+   <div class="badge" style="background:var(--green-l);color:var(--green)">Section 2</div>
+   <h2>Comment ca fonctionne ?</h2>
+   <p>Pour bien comprendre, imaginons un restaurant...</p>
+  </div>
+  <div class="analogy reveal">
+   <div class="an-card" style="background:var(--blue-l)">
+    <span class="emoji">&#127869;</span>
+    <h4>La salle du restaurant</h4>
+    <div class="real" style="color:var(--blue)">= Le SITE WEB (Frontend)</div>
+    <p>C'est ce que vous voyez : les boutons, les menus, le planning. C'est la <strong>partie visible</strong> de l'application.</p>
+   </div>
+   <div class="an-card" style="background:var(--green-l)">
+    <span class="emoji">&#127859;</span>
+    <h4>La cuisine</h4>
+    <div class="real" style="color:var(--green)">= Le SERVEUR (Backend)</div>
+    <p>C'est la ou les plats sont prepares. Le serveur traite vos demandes et va chercher les donnees.</p>
+   </div>
+   <div class="an-card" style="background:var(--orange-l)">
+    <span class="emoji">&#129482;</span>
+    <h4>Le frigo / le stock</h4>
+    <div class="real" style="color:var(--orange)">= La BASE DE DONNEES</div>
+    <p>Toutes les informations sont stockees ici : employes, chantiers, planning, questions, plans...</p>
+   </div>
+   <div class="an-card" style="background:var(--red-l)">
+    <span class="emoji">&#128666;</span>
+    <h4>Le fournisseur</h4>
+    <div class="real" style="color:var(--red)">= MICROSOFT FABRIC (HK)</div>
+    <p>Il livre les ingredients (donnees HK : filiales, employes, chantiers, OF) automatiquement chaque heure.</p>
+   </div>
+  </div>
+  <div class="reveal" style="margin-top:40px">
+   <h3 style="text-align:center;margin-bottom:8px">Le parcours d'un clic</h3>
+   <p style="text-align:center;color:var(--g500);margin-bottom:16px;font-size:.9rem">Quand vous cliquez sur &laquo; Voir le planning de Lundi &raquo;</p>
+   <div class="flow">
+    <div class="flow-s"><div class="circ" style="background:var(--blue-l);color:var(--blue)">&#128073;</div><h5>Vous cliquez</h5><small>Planning Lundi</small></div>
+    <div class="flow-a">&#10140;</div>
+    <div class="flow-s"><div class="circ" style="background:var(--blue-l);color:var(--blue)">&#127760;</div><h5>Le site envoie</h5><small>une demande</small></div>
+    <div class="flow-a">&#10140;</div>
+    <div class="flow-s"><div class="circ" style="background:var(--green-l);color:var(--green)">&#9881;</div><h5>Le serveur recoit</h5><small>et traite</small></div>
+    <div class="flow-a">&#10140;</div>
+    <div class="flow-s"><div class="circ" style="background:var(--orange-l);color:var(--orange)">&#128451;</div><h5>Base de donnees</h5><small>renvoie les infos</small></div>
+    <div class="flow-a">&#10140;</div>
+    <div class="flow-s"><div class="circ" style="background:var(--green-l);color:var(--green)">&#128230;</div><h5>Serveur prepare</h5><small>la reponse</small></div>
+    <div class="flow-a">&#10140;</div>
+    <div class="flow-s"><div class="circ" style="background:var(--blue-l);color:var(--blue)">&#9989;</div><h5>Le planning</h5><small>s'affiche !</small></div>
+   </div>
+   <div class="info bl" style="max-width:600px;margin:12px auto">
+    <div class="ic">&#9889;</div>
+    <p><strong>Tout ca en moins d'une seconde !</strong> Vous ne voyez rien de tout ca, c'est invisible et instantane.</p>
+   </div>
+  </div>
+ </div>
+</section>
+
+<!-- ============ SECTION 3 : LES OUTILS ============ -->
+<section id="outils">
+ <div class="container">
+  <div class="section-hdr reveal">
+   <div class="badge" style="background:var(--orange-l);color:var(--orange)">Section 3</div>
+   <h2>Les outils utilises</h2>
+   <p>Chaque outil a un role precis, comme dans une equipe. Cliquez pour en savoir plus.</p>
+  </div>
+
+  <!-- Vue d'ensemble outils -->
+  <div class="grid3 reveal" style="margin-bottom:40px">
+   <div class="card" style="border-left:4px solid var(--blue)"><h3>&#128230; GitHub</h3><p>Le coffre-fort du code. Comme Google Drive, mais pour du code source.</p></div>
+   <div class="card" style="border-left:4px solid var(--green)"><h3>&#128230; Docker</h3><p>L'emballage universel. Garantit que l'appli marche pareil partout.</p></div>
+   <div class="card" style="border-left:4px solid var(--orange)"><h3>&#128187; Windsurf</h3><p>L'editeur de code avec IA integree. Comme Word, mais pour coder.</p></div>
+   <div class="card" style="border-left:4px solid var(--red)"><h3>&#128737; Nginx</h3><p>Le portier. Accueille les visiteurs et les dirige au bon endroit.</p></div>
+   <div class="card" style="border-left:4px solid var(--purple)"><h3>&#9881; React</h3><p>Construit l'interface visible : boutons, tableaux, pages, menus.</p></div>
+   <div class="card" style="border-left:4px solid var(--blue)"><h3>&#128640; Fastify</h3><p>Le moteur invisible. Traite les demandes et va chercher les donnees.</p></div>
+   <div class="card" style="border-left:4px solid var(--green)"><h3>&#128451; SQLite</h3><p>Le classeur de donnees. Un simple fichier qui contient tout.</p></div>
+   <div class="card" style="border-left:4px solid var(--orange)"><h3>&#9729; Fabric</h3><p>Le fournisseur de donnees HK. Import auto toutes les heures.</p></div>
+   <div class="card" style="border-left:4px solid var(--red)"><h3>&#128272; Azure AD</h3><p>Le vigile. Verifie votre identite Microsoft a la connexion.</p></div>
+  </div>
+
+  <!-- DETAIL : GitHub -->
+  <div class="tool-box reveal">
+   <div class="tool-l">
+    <h3>&#128230; GitHub</h3>
+    <div class="sub">Le coffre-fort du code</div>
+    <p>Imaginez un <strong>Google Drive</strong>, mais specialise pour le code. Chaque modification est enregistree avec un message qui dit ce qui a change. On peut revenir en arriere a tout moment.</p>
+    <p>C'est aussi le <strong>pont entre le PC du developpeur et le serveur</strong> : quand le dev envoie son code sur GitHub, le serveur le detecte et met a jour l'application automatiquement.</p>
+    <div class="info bl"><div class="ic">&#128279;</div><p>Adresse du projet : <strong>github.com/CYBERTESTCAA/PLANNING_PREVISIONNEL</strong></p></div>
+   </div>
+   <div class="tool-r">
+    <h4>A quoi ca sert concretement ?</h4>
+    <ul>
+     <li>Sauvegarder le code en ligne (meme si le PC lache)</li>
+     <li>Voir l'historique de toutes les modifications</li>
+     <li>Permettre a un nouveau collegue de recuperer le projet en 2 min</li>
+     <li>Declencher la mise a jour automatique du serveur</li>
+     <li>Revenir a une version anterieure si besoin</li>
+    </ul>
+   </div>
+  </div>
+
+  <!-- DETAIL : Docker -->
+  <div class="tool-box reveal">
+   <div class="tool-l">
+    <h3>&#128230; Docker</h3>
+    <div class="sub">L'emballage universel</div>
+    <p>Imaginez que vous envoyez un colis. Si vous envoyez les pieces en vrac, le destinataire ne saura pas les assembler. <strong>Docker = le meuble DEJA MONTE</strong> dans une boite parfaite.</p>
+    <p>L'application + tout ce qu'il lui faut est empaquetee dans un <strong>conteneur</strong>. Resultat : elle fonctionne exactement pareil sur le PC du dev et sur le serveur.</p>
+   </div>
+   <div class="tool-r">
+    <h4>Dans notre cas : 2 conteneurs</h4>
+    <ul>
+     <li><strong>planning-web</strong> : le site web (l'interface visible)</li>
+     <li><strong>planning-api</strong> : le moteur + base de donnees</li>
+     <li>Les deux communiquent entre eux automatiquement</li>
+     <li>Si un conteneur plante, on le redemarre en 5 secondes</li>
+     <li>Plus jamais de &laquo; ca marche sur mon PC mais pas ailleurs &raquo;</li>
+    </ul>
+   </div>
+  </div>
+
+  <!-- DETAIL : Windsurf -->
+  <div class="tool-box reveal">
+   <div class="tool-l">
+    <h3>&#128187; Windsurf + Cascade</h3>
+    <div class="sub">L'editeur de code avec IA</div>
+    <p>Windsurf c'est comme <strong>Word pour ecrire une lettre</strong>, sauf que c'est pour ecrire du code. Sa particularite : il a une <strong>IA integree</strong> appelee Cascade.</p>
+    <p>Cascade fonctionne comme un assistant a qui on dit en francais : <em>&laquo; Ajoute un bouton qui exporte le planning en PDF &raquo;</em> et il ecrit le code ! L'essentiel de cette application a ete developpe comme ca.</p>
+   </div>
+   <div class="tool-r">
+    <h4>Pourquoi c'est utile ?</h4>
+    <ul>
+     <li>Developper beaucoup plus vite qu'a la main</li>
+     <li>L'IA comprend le contexte du projet</li>
+     <li>On peut exporter l'historique pour un autre dev</li>
+     <li>Alternative : VS Code (gratuit, sans IA integree)</li>
+     <li>Le projet peut etre ouvert dans n'importe quel editeur</li>
+    </ul>
+   </div>
+  </div>
+
+  <!-- DETAIL : Nginx -->
+  <div class="tool-box reveal">
+   <div class="tool-l">
+    <h3>&#128737; Nginx</h3>
+    <div class="sub">Le portier de l'application</div>
+    <p>Nginx c'est comme <strong>le receptionniste d'un hotel</strong>. Vous arrivez, il vous dit : la salle de reunion c'est a droite, le restaurant a gauche.</p>
+    <p>Concretement : quand vous tapez l'adresse du site, c'est Nginx qui vous envoie la page web. Et quand le site a besoin de donnees, Nginx redirige vers le moteur (Fastify).</p>
+   </div>
+   <div class="tool-r">
+    <h4>Ses responsabilites</h4>
+    <ul>
+     <li>Servir les pages web (HTML/CSS/JS)</li>
+     <li>Rediriger les appels /api vers Fastify</li>
+     <li>Chiffrer la connexion (HTTPS = cadenas)</li>
+     <li>Proteger avec des headers de securite</li>
+     <li>Mettre en cache pour accelerer</li>
+    </ul>
+   </div>
+  </div>
+
+  <!-- DETAIL : React + TypeScript -->
+  <div class="tool-box reveal">
+   <div class="tool-l">
+    <h3>&#9881; React 18 + TypeScript</h3>
+    <div class="sub">Frontend SPA (Single Page Application)</div>
+    <p>React est une lib JS de Meta pour construire des interfaces composant par composant. Chaque page (ex: <code>PlanningPage.tsx</code>) est un <strong>composant fonctionnel</strong> avec des hooks (<code>useState</code>, <code>useEffect</code>, <code>useMemo</code>).</p>
+    <p>TypeScript ajoute le typage statique : les interfaces sont definies dans <code>src/lib/api.ts</code>, partagees frontend/backend. Le compilateur detecte les erreurs avant l'execution.</p>
+   </div>
+   <div class="tool-r">
+    <h4>Stack frontend complete</h4>
+    <ul>
+     <li><strong>React 18</strong> : composants fonctionnels + hooks</li>
+     <li><strong>Vite 5</strong> : dev server HMR + build optimise</li>
+     <li><strong>TypeScript 5</strong> : typage strict (strict: true)</li>
+     <li><strong>TailwindCSS 3</strong> : utility-first CSS</li>
+     <li><strong>react-router-dom v6</strong> : routage SPA</li>
+     <li><strong>@tanstack/react-query</strong> : cache + fetch async</li>
+     <li><strong>Radix UI</strong> : composants headless accessibles</li>
+     <li><strong>FullCalendar</strong> : calendrier interactif</li>
+     <li><strong>Recharts</strong> : graphiques SVG</li>
+     <li><strong>Zod</strong> : validation runtime des schemas</li>
+    </ul>
+   </div>
+  </div>
+
+  <!-- CODE : React component example -->
+  <div class="reveal" style="margin-bottom:32px">
+   <h3 style="margin-bottom:4px">Exemple : un composant React typique du projet</h3>
+   <p style="color:var(--g500);font-size:.85rem;margin-bottom:8px">Chaque page suit ce pattern : hooks pour l'etat + fetch API + rendu JSX avec Tailwind</p>
+   <div class="code-block"><span class="cm">// src/pages/PlansPage.tsx (simplifie)</span>
+<span class="kw">import</span> { <span class="fn">useState</span>, <span class="fn">useEffect</span>, <span class="fn">useMemo</span> } <span class="kw">from</span> <span class="str">'react'</span>;
+<span class="kw">import</span> { api, <span class="tp">ApiPlan</span>, <span class="tp">ApiProject</span> } <span class="kw">from</span> <span class="str">'../lib/api'</span>;
+
+<span class="kw">export default function</span> <span class="fn">PlansPage</span>() {
+  <span class="kw">const</span> [plans, setPlans] = <span class="fn">useState</span>&lt;<span class="tp">ApiPlan</span>[]&gt;([]);
+  <span class="kw">const</span> [project, setProject] = <span class="fn">useState</span>&lt;<span class="tp">ApiProject</span> | <span class="tp">null</span>&gt;(<span class="kw">null</span>);
+  <span class="kw">const</span> [loading, setLoading] = <span class="fn">useState</span>(<span class="kw">true</span>);
+
+  <span class="fn">useEffect</span>(() =&gt; {
+    <span class="kw">if</span> (!project) <span class="kw">return</span>;
+    api.<span class="fn">getPlans</span>(project.id).<span class="fn">then</span>(data =&gt; {
+      <span class="fn">setPlans</span>(data);
+      <span class="fn">setLoading</span>(<span class="kw">false</span>);
+    });
+  }, [project]);
+
+  <span class="kw">const</span> stats = <span class="fn">useMemo</span>(() =&gt; ({
+    total: plans.length,
+    avecArticles: plans.<span class="fn">filter</span>(p =&gt; p.articles.length &gt; <span class="num">0</span>).length,
+  }), [plans]);
+
+  <span class="kw">return</span> (
+    &lt;<span class="tag">div</span> <span class="attr">className</span>=<span class="str">"p-6 space-y-4"</span>&gt;
+      &lt;<span class="tag">h1</span> <span class="attr">className</span>=<span class="str">"text-2xl font-bold"</span>&gt;Plans ({stats.total})&lt;/<span class="tag">h1</span>&gt;
+      {plans.<span class="fn">map</span>(plan =&gt; (
+        &lt;<span class="tag">PlanCard</span> <span class="attr">key</span>={plan.id} <span class="attr">plan</span>={plan} /&gt;
+      ))}
+    &lt;/<span class="tag">div</span>&gt;
+  );
+}</div>
+  </div>
+
+  <!-- CODE : TypeScript interfaces -->
+  <div class="reveal" style="margin-bottom:32px">
+   <h3 style="margin-bottom:4px">Interfaces TypeScript partagees (src/lib/api.ts)</h3>
+   <p style="color:var(--g500);font-size:.85rem;margin-bottom:8px">Les types sont definis une fois et utilises partout — frontend ET backend</p>
+   <div class="tech-grid">
+    <div class="code-block"><span class="cm">// Types metier principaux</span>
+<span class="kw">export interface</span> <span class="tp">ApiProject</span> {
+  id: <span class="tp">number</span>;
+  code: <span class="tp">string</span>;
+  label: <span class="tp">string</span>;
+  color: <span class="tp">string</span> | <span class="tp">null</span>;
+  status: <span class="tp">string</span>;
+  progress: <span class="tp">number</span>;
+  contractStart: <span class="tp">string</span> | <span class="tp">null</span>;
+  contractEnd: <span class="tp">string</span> | <span class="tp">null</span>;
+}
+
+<span class="kw">export interface</span> <span class="tp">ApiManufacturingOrder</span> {
+  id: <span class="tp">number</span>;
+  projectId: <span class="tp">number</span>;
+  code: <span class="tp">string</span>;
+  label: <span class="tp">string</span>;
+  articles?: <span class="tp">ApiArticle</span>[];
+}
+
+<span class="kw">export interface</span> <span class="tp">ApiArticle</span> {
+  id: <span class="tp">number</span>;
+  manufacturingOrderId: <span class="tp">number</span>;
+  code: <span class="tp">string</span>;
+  designation: <span class="tp">string</span>;
+  quantity: <span class="tp">number</span>;
+}</div>
+    <div class="code-block"><span class="cm">// Types planning</span>
+<span class="kw">export interface</span> <span class="tp">ApiAssignment</span> {
+  id: <span class="tp">number</span>;
+  employeeId: <span class="tp">number</span>;
+  projectId: <span class="tp">number</span>;
+  date: <span class="tp">string</span>;       <span class="cm">// "2025-03-06"</span>
+  slot: <span class="str">'AM'</span> | <span class="str">'PM'</span> | <span class="str">'FULL'</span>;
+  employee?: <span class="tp">ApiEmployee</span>;
+  project?: <span class="tp">ApiProject</span>;
+}
+
+<span class="kw">export interface</span> <span class="tp">ApiPlan</span> {
+  id: <span class="tp">number</span>;
+  projectId: <span class="tp">number</span>;
+  hk: <span class="tp">string</span> | <span class="tp">null</span>;
+  number: <span class="tp">number</span>;
+  articles: <span class="tp">ApiArticle</span>[];
+}
+
+<span class="kw">export interface</span> <span class="tp">ApiQuestion</span> {
+  id: <span class="tp">number</span>;
+  projectId: <span class="tp">number</span>;
+  designation: <span class="tp">string</span>;
+  status: <span class="str">'NON_TRAITE'</span>|<span class="str">'EN_COURS'</span>|<span class="str">'TERMINE'</span>;
+  questionText: <span class="tp">string</span>;
+  responseText: <span class="tp">string</span> | <span class="tp">null</span>;
+  attachments: <span class="tp">ApiAttachment</span>[];
+}</div>
+   </div>
+  </div>
+
+  <!-- DETAIL : Fastify + SQLite + Prisma -->
+  <div class="tool-box reveal">
+   <div class="tool-l">
+    <h3>&#128640; Fastify 5 + Prisma 6 + SQLite</h3>
+    <div class="sub">Backend API REST — Node.js 20</div>
+    <p><strong>Fastify</strong> est un framework HTTP Node.js plus performant qu'Express (~2x). Il utilise un systeme de plugins et de schemas JSON pour la validation automatique des requetes.</p>
+    <p><strong>Prisma</strong> est l'ORM qui genere un client type-safe a partir du schema <code>schema.prisma</code>. On ecrit <code>prisma.plan.findMany()</code> au lieu de requetes SQL manuelles. <strong>SQLite</strong> stocke tout dans un seul fichier <code>.sqlite</code>.</p>
+   </div>
+   <div class="tool-r">
+    <h4>Stack backend complete</h4>
+    <ul>
+     <li><strong>Fastify 5</strong> : routing, plugins, hooks lifecycle</li>
+     <li><strong>Prisma 6</strong> : ORM type-safe + migrations</li>
+     <li><strong>SQLite</strong> : SGBD embarque (fichier unique)</li>
+     <li><strong>Zod</strong> : validation des body/params</li>
+     <li><strong>@fastify/cors</strong> : Cross-Origin (dev)</li>
+     <li><strong>@fastify/helmet</strong> : headers securite</li>
+     <li><strong>@fastify/rate-limit</strong> : anti-abus</li>
+     <li><strong>@fastify/multipart</strong> : upload fichiers</li>
+     <li><strong>mssql</strong> : connexion SQL Server (Fabric)</li>
+     <li><strong>jsonwebtoken + jwks-rsa</strong> : verification JWT</li>
+     <li><strong>node-cron</strong> : taches planifiees (sync, backup)</li>
+    </ul>
+   </div>
+  </div>
+
+  <!-- CODE : Fastify route example -->
+  <div class="reveal" style="margin-bottom:32px">
+   <h3 style="margin-bottom:4px">Exemple : une route Fastify (api/src/routes/plans.ts)</h3>
+   <p style="color:var(--g500);font-size:.85rem;margin-bottom:8px">Chaque fichier de route exporte une fonction qui enregistre ses endpoints sur l'instance Fastify</p>
+   <div class="code-block"><span class="cm">// api/src/routes/plans.ts (simplifie)</span>
+<span class="kw">import</span> { <span class="tp">FastifyInstance</span> } <span class="kw">from</span> <span class="str">'fastify'</span>;
+<span class="kw">import</span> { <span class="tp">PrismaClient</span> } <span class="kw">from</span> <span class="str">'@prisma/client'</span>;
+<span class="kw">import</span> { z } <span class="kw">from</span> <span class="str">'zod'</span>;
+
+<span class="kw">const</span> prisma = <span class="kw">new</span> <span class="fn">PrismaClient</span>();
+
+<span class="kw">const</span> CreatePlanSchema = z.<span class="fn">object</span>({
+  projectId: z.<span class="fn">number</span>(),
+  hk: z.<span class="fn">string</span>().<span class="fn">optional</span>(),
+  number: z.<span class="fn">number</span>(),
+  articleIds: z.<span class="fn">array</span>(z.<span class="fn">number</span>()).<span class="fn">optional</span>(),
+});
+
+<span class="kw">export default async function</span> <span class="fn">planRoutes</span>(app: <span class="tp">FastifyInstance</span>) {
+  <span class="cm">// GET /plans?projectId=123</span>
+  app.<span class="fn">get</span>(<span class="str">'/plans'</span>, <span class="kw">async</span> (req, reply) =&gt; {
+    <span class="kw">const</span> { projectId } = req.query <span class="kw">as</span> { projectId: <span class="tp">string</span> };
+    <span class="kw">const</span> plans = <span class="kw">await</span> prisma.plan.<span class="fn">findMany</span>({
+      <span class="attr">where</span>: { projectId: <span class="fn">Number</span>(projectId) },
+      <span class="attr">include</span>: { articles: <span class="kw">true</span> },
+      <span class="attr">orderBy</span>: { number: <span class="str">'asc'</span> },
+    });
+    <span class="kw">return</span> plans;
+  });
+
+  <span class="cm">// POST /plans — cree un plan avec ses articles</span>
+  app.<span class="fn">post</span>(<span class="str">'/plans'</span>, <span class="kw">async</span> (req, reply) =&gt; {
+    <span class="kw">const</span> body = CreatePlanSchema.<span class="fn">parse</span>(req.body);
+    <span class="kw">const</span> plan = <span class="kw">await</span> prisma.plan.<span class="fn">create</span>({
+      <span class="attr">data</span>: {
+        projectId: body.projectId,
+        hk: body.hk ?? <span class="kw">null</span>,
+        number: body.number,
+        articles: body.articleIds ? {
+          <span class="attr">connect</span>: body.articleIds.<span class="fn">map</span>(id =&gt; ({ id }))
+        } : <span class="kw">undefined</span>,
+      },
+      <span class="attr">include</span>: { articles: <span class="kw">true</span> },
+    });
+    reply.<span class="fn">code</span>(<span class="num">201</span>);
+    <span class="kw">return</span> plan;
+  });
+}</div>
+  </div>
+
+  <!-- CODE : Prisma Schema -->
+  <div class="reveal" style="margin-bottom:32px">
+   <h3 style="margin-bottom:4px">Schema Prisma (api/prisma/schema.prisma)</h3>
+   <p style="color:var(--g500);font-size:.85rem;margin-bottom:8px">Le schema definit toutes les tables, relations et types. Prisma genere le client TypeScript a partir de ce fichier.</p>
+   <div class="tech-grid">
+    <div class="code-block"><span class="cm">// Extrait du schema (structure principale)</span>
+
+<span class="kw">model</span> <span class="tp">Subsidiary</span> {
+  id        <span class="tp">Int</span>        <span class="attr">@id</span> <span class="attr">@default</span>(<span class="fn">autoincrement</span>())
+  code      <span class="tp">String</span>     <span class="attr">@unique</span>
+  name      <span class="tp">String</span>
+  workshops <span class="tp">Workshop</span>[]
+}
+
+<span class="kw">model</span> <span class="tp">Employee</span> {
+  id           <span class="tp">Int</span>          <span class="attr">@id</span> <span class="attr">@default</span>(<span class="fn">autoincrement</span>())
+  code         <span class="tp">String</span>       <span class="attr">@unique</span>
+  firstName    <span class="tp">String</span>
+  lastName     <span class="tp">String</span>
+  active       <span class="tp">Boolean</span>      <span class="attr">@default</span>(<span class="kw">true</span>)
+  teamId       <span class="tp">Int</span>?
+  team         <span class="tp">Team</span>?        <span class="attr">@relation</span>(...)
+  assignments  <span class="tp">Assignment</span>[]
+  absences     <span class="tp">Absence</span>[]
+}</div>
+    <div class="code-block"><span class="cm">// Modeles metier</span>
+
+<span class="kw">model</span> <span class="tp">Project</span> {
+  id              <span class="tp">Int</span>       <span class="attr">@id</span> <span class="attr">@default</span>(...)
+  code            <span class="tp">String</span>    <span class="attr">@unique</span>
+  label           <span class="tp">String</span>
+  color           <span class="tp">String</span>?
+  status          <span class="tp">String</span>    <span class="attr">@default</span>(<span class="str">"EN_COURS"</span>)
+  progress        <span class="tp">Float</span>     <span class="attr">@default</span>(<span class="num">0</span>)
+  orders          <span class="tp">ManufacturingOrder</span>[]
+  plans           <span class="tp">Plan</span>[]
+  questions       <span class="tp">Question</span>[]
+  assignments     <span class="tp">Assignment</span>[]
+}
+
+<span class="kw">model</span> <span class="tp">Assignment</span> {
+  id          <span class="tp">Int</span>      <span class="attr">@id</span> <span class="attr">@default</span>(...)
+  employeeId  <span class="tp">Int</span>
+  projectId   <span class="tp">Int</span>
+  date        <span class="tp">DateTime</span>
+  slot        <span class="tp">String</span>   <span class="cm">// AM | PM | FULL</span>
+  <span class="attr">@@unique</span>([employeeId, date, slot])
+}</div>
+   </div>
+  </div>
+
+  <!-- API ROUTES TABLE -->
+  <div class="reveal" style="margin-bottom:32px">
+   <h3 style="margin-bottom:4px">Les 20 routes API REST</h3>
+   <p style="color:var(--g500);font-size:.85rem;margin-bottom:8px">Toutes les routes sont dans <code>api/src/routes/</code>. Chaque fichier = un module independant.</p>
+   <div style="overflow-x:auto">
+   <table class="dep-table">
+    <thead><tr><th>Route</th><th>Methodes</th><th>Description</th></tr></thead>
+    <tbody>
+     <tr><td><code>/subsidiaries</code></td><td>GET, POST, PUT, DELETE</td><td>CRUD filiales</td></tr>
+     <tr><td><code>/workshops</code></td><td>GET, POST, PUT, DELETE</td><td>CRUD ateliers</td></tr>
+     <tr><td><code>/teams</code></td><td>GET, POST, PUT, DELETE</td><td>CRUD equipes</td></tr>
+     <tr><td><code>/employees</code></td><td>GET, POST, PUT, DELETE</td><td>CRUD personnel + activation</td></tr>
+     <tr><td><code>/projects</code></td><td>GET, POST, PUT, DELETE</td><td>CRUD chantiers (couleur, statut, dates)</td></tr>
+     <tr><td><code>/manufacturing-orders</code></td><td>GET, POST, PUT, DELETE</td><td>CRUD ordres de fabrication + articles</td></tr>
+     <tr><td><code>/plans</code></td><td>GET, POST, PUT, DELETE</td><td>CRUD plans (unitaire + bulk creation)</td></tr>
+     <tr><td><code>/assignments</code></td><td>GET, POST, PUT, DELETE</td><td>Affectations employe ↔ chantier ↔ date</td></tr>
+     <tr><td><code>/absences</code></td><td>GET, POST, PUT, DELETE</td><td>CP, RTT, maladie, formation, autre</td></tr>
+     <tr><td><code>/questions</code></td><td>GET, POST, PUT, DELETE</td><td>Questions + reponses + statut</td></tr>
+     <tr><td><code>/attachments</code></td><td>GET, POST, DELETE</td><td>Upload/suppression pieces jointes</td></tr>
+     <tr><td><code>/planning</code></td><td>GET</td><td>Chargement de periode (grille planning)</td></tr>
+     <tr><td><code>/calendar</code></td><td>GET</td><td>Donnees calendrier personnel</td></tr>
+     <tr><td><code>/sync</code></td><td>POST, GET</td><td>Trigger sync Fabric + status + historique</td></tr>
+     <tr><td><code>/clients</code></td><td>GET, POST, PUT, DELETE</td><td>Gestion des clients</td></tr>
+     <tr><td><code>/dessinateurs</code></td><td>GET, POST, PUT, DELETE</td><td>Gestion des dessinateurs</td></tr>
+     <tr><td><code>/affaires</code></td><td>GET, POST, PUT, DELETE</td><td>Gestion des affaires</td></tr>
+     <tr><td><code>/time-entries</code></td><td>GET, POST, PUT, DELETE</td><td>Saisie des temps</td></tr>
+     <tr><td><code>/warehouse</code></td><td>GET</td><td>Donnees entrepot (read-only depuis Fabric)</td></tr>
+     <tr><td><code>/tasks</code></td><td>GET, POST, PUT, DELETE</td><td>Taches collaborateur</td></tr>
+    </tbody>
+   </table>
+   </div>
+  </div>
+
+  <!-- DETAIL : Azure AD -->
+  <div class="tool-box reveal">
+   <div class="tool-l">
+    <h3>&#128272; Azure AD (Entra ID) + MSAL</h3>
+    <div class="sub">Authentification OAuth2 / OpenID Connect</div>
+    <p>L'appli utilise <strong>@azure/msal-react</strong> cote frontend pour le flow OAuth2 Authorization Code + PKCE. L'utilisateur se connecte via la popup Microsoft, le frontend recoit un <strong>access token JWT</strong>.</p>
+    <p>Cote backend, chaque requete API porte le JWT dans le header <code>Authorization: Bearer &lt;token&gt;</code>. Fastify verifie la signature via <strong>JWKS</strong> (cles publiques Azure) avec <code>jwks-rsa</code> + <code>jsonwebtoken</code>.</p>
+   </div>
+   <div class="tool-r">
+    <h4>Architecture d'auth</h4>
+    <ul>
+     <li><strong>Frontend</strong> : MSAL popup → access_token</li>
+     <li><strong>API calls</strong> : header Authorization: Bearer</li>
+     <li><strong>Backend</strong> : middleware de verification JWT</li>
+     <li><strong>JWKS</strong> : cles publiques Microsoft pour verifier</li>
+     <li><strong>Tenant</strong> : Azure AD de l'entreprise CAA</li>
+     <li><strong>Scopes</strong> : api://&lt;app-id&gt;/access</li>
+     <li><strong>Fabric</strong> : Service Principal (client_credentials)</li>
+    </ul>
+   </div>
+  </div>
+ </div>
+</section>
+
+<!-- ============ SECTION 4 : ARCHITECTURE ============ -->
+<section id="architecture">
+ <div class="container">
+  <div class="section-hdr reveal">
+   <div class="badge" style="background:var(--purple-l);color:var(--purple)">Section 4</div>
+   <h2>L'architecture de l'application</h2>
+   <p>Comment les differentes briques s'assemblent entre elles.</p>
+  </div>
+
+  <div class="reveal">
+   <h3 style="text-align:center;margin-bottom:16px">Schema interactif</h3>
+   <p style="text-align:center;color:var(--g500);margin-bottom:24px;font-size:.9rem">Survolez chaque element pour voir son role</p>
+   <div class="mono-box" id="archi-schema">
+    VOTRE PC                                        LE SERVEUR (192.168.13.51)
+    --------                                        --------------------------
+
+    Navigateur web        https://192.168.13.51
+    (Chrome, Edge...)  ==============================>  NGINX (le portier)
+                                                          |
+                                                    ------+------
+                                                    |           |
+                                              Pages web    Requetes /api
+                                              (React)      (donnees)
+                                                                |
+                                                                v
+                                                        FASTIFY (le moteur)
+                                                                |
+                                                                v
+                                                        SQLITE (la base)
+                                                        (fichier unique)
+
+    PC Developpeur                                  Mise a jour auto
+    --------------                                  ----------------
+    Windsurf / VS Code                              Toutes les 5 min :
+    git push ========> GITHUB ===================>  git pull + Docker rebuild
+                       (coffre-fort)                => App mise a jour !
+   </div>
+  </div>
+
+  <div class="reveal" style="margin-top:32px">
+   <h3 style="text-align:center;margin-bottom:16px">Les 2 conteneurs Docker</h3>
+   <div class="grid2">
+    <div class="card" style="border-top:4px solid var(--blue)">
+     <h3>&#127760; planning-web</h3>
+     <p style="margin-bottom:12px">Le conteneur qui sert le site web visible.</p>
+     <ul>
+      <li>Nginx sert les fichiers HTML/CSS/JS</li>
+      <li>Redirige les appels /api vers le backend</li>
+      <li>Gere le HTTPS (chiffrement)</li>
+      <li>Met en cache les fichiers pour la rapidite</li>
+      <li>Port : 80 (HTTP) et 443 (HTTPS)</li>
+     </ul>
+    </div>
+    <div class="card" style="border-top:4px solid var(--green)">
+     <h3>&#9881; planning-api</h3>
+     <p style="margin-bottom:12px">Le conteneur qui fait tourner le moteur et la base.</p>
+     <ul>
+      <li>Fastify traite les requetes (GET, POST...)</li>
+      <li>Prisma interroge la base SQLite</li>
+      <li>Sync Fabric toutes les heures (import HK)</li>
+      <li>Sauvegarde auto chaque nuit a 2h</li>
+      <li>Port : 3001 (interne, pas visible de l'exterieur)</li>
+     </ul>
+    </div>
+   </div>
+  </div>
+
+  <!-- Docker Compose + Nginx config technique -->
+  <div class="reveal" style="margin-top:32px">
+   <h3 style="margin-bottom:4px">Docker Compose (docker-compose.yml)</h3>
+   <p style="color:var(--g500);font-size:.85rem;margin-bottom:8px">Orchestration des 2 services — volumes, ports, healthcheck, depends_on</p>
+   <div class="code-block"><span class="cm"># docker-compose.yml (simplifie)</span>
+<span class="kw">version</span>: <span class="str">'3.8'</span>
+<span class="kw">services</span>:
+  <span class="fn">web</span>:
+    <span class="kw">build</span>: <span class="str">.</span>                          <span class="cm"># Dockerfile racine (Vite build + Nginx)</span>
+    <span class="kw">container_name</span>: <span class="str">planning-web</span>
+    <span class="kw">ports</span>:
+      - <span class="str">"80:80"</span>                       <span class="cm"># HTTP</span>
+      - <span class="str">"443:443"</span>                     <span class="cm"># HTTPS (TLS self-signed)</span>
+    <span class="kw">depends_on</span>:
+      api:
+        <span class="kw">condition</span>: <span class="str">service_healthy</span>    <span class="cm"># attend que l'API soit UP</span>
+    <span class="kw">restart</span>: <span class="str">unless-stopped</span>
+
+  <span class="fn">api</span>:
+    <span class="kw">build</span>: <span class="str">./api</span>                       <span class="cm"># api/Dockerfile (Node 20-slim)</span>
+    <span class="kw">container_name</span>: <span class="str">planning-api</span>
+    <span class="kw">ports</span>:
+      - <span class="str">"3001:3001"</span>                   <span class="cm"># API interne</span>
+    <span class="kw">volumes</span>:
+      - <span class="str">api-data:/data</span>                <span class="cm"># volume persistant (SQLite + uploads)</span>
+    <span class="kw">env_file</span>: <span class="str">./api/.env</span>               <span class="cm"># variables d'env (secrets, Fabric, etc.)</span>
+    <span class="kw">healthcheck</span>:
+      <span class="kw">test</span>: [<span class="str">"CMD"</span>, <span class="str">"curl"</span>, <span class="str">"-f"</span>, <span class="str">"http://localhost:3001/health"</span>]
+      <span class="kw">interval</span>: <span class="str">30s</span>
+      <span class="kw">timeout</span>: <span class="str">5s</span>
+      <span class="kw">retries</span>: <span class="num">3</span>
+    <span class="kw">restart</span>: <span class="str">unless-stopped</span>
+
+<span class="kw">volumes</span>:
+  <span class="fn">api-data</span>:                           <span class="cm"># persiste entre les rebuilds</span></div>
+  </div>
+
+  <div class="reveal" style="margin-top:24px">
+   <h3 style="margin-bottom:4px">Configuration Nginx (docker/nginx.conf)</h3>
+   <p style="color:var(--g500);font-size:.85rem;margin-bottom:8px">Reverse proxy, TLS, headers de securite, cache des assets</p>
+   <div class="code-block"><span class="cm"># docker/nginx.conf (extrait)</span>
+<span class="kw">server</span> {
+    <span class="kw">listen</span> <span class="num">443</span> <span class="str">ssl</span>;
+    <span class="kw">ssl_certificate</span>     <span class="str">/etc/nginx/certs/selfsigned.crt</span>;
+    <span class="kw">ssl_certificate_key</span> <span class="str">/etc/nginx/certs/selfsigned.key</span>;
+    <span class="kw">ssl_protocols</span>       <span class="str">TLSv1.2 TLSv1.3</span>;
+
+    <span class="cm"># Headers de securite</span>
+    <span class="kw">add_header</span> <span class="str">X-Frame-Options "DENY"</span>;
+    <span class="kw">add_header</span> <span class="str">X-Content-Type-Options "nosniff"</span>;
+    <span class="kw">add_header</span> <span class="str">Strict-Transport-Security "max-age=31536000"</span>;
+
+    <span class="cm"># SPA React : toutes les routes → index.html</span>
+    <span class="kw">location</span> <span class="str">/</span> {
+        <span class="kw">root</span>   <span class="str">/usr/share/nginx/html</span>;
+        <span class="kw">try_files</span> <span class="str">$uri $uri/ /index.html</span>;
+    }
+
+    <span class="cm"># Proxy reverse vers Fastify</span>
+    <span class="kw">location</span> <span class="str">/api/</span> {
+        <span class="kw">proxy_pass</span> <span class="str">http://planning-api:3001/</span>;
+        <span class="kw">proxy_set_header</span> <span class="str">Host $host</span>;
+        <span class="kw">proxy_set_header</span> <span class="str">X-Real-IP $remote_addr</span>;
+    }
+
+    <span class="cm"># Cache agressif sur les assets compiles (immutable)</span>
+    <span class="kw">location</span> <span class="str">/assets/</span> {
+        <span class="kw">expires</span> <span class="str">1y</span>;
+        <span class="kw">add_header</span> <span class="str">Cache-Control "public, immutable"</span>;
+    }
+}</div>
+  </div>
+
+  <div class="reveal" style="margin-top:32px">
+   <h3 style="text-align:center;margin-bottom:16px">Organisation des fichiers du projet</h3>
+   <div class="acc" onclick="this.classList.toggle('open')">
+    <button class="acc-h">&#128193; src/ — Le code du site web (Frontend React) <span class="ar">&#9660;</span></button>
+    <div class="acc-b"><div class="acc-c">
+     <strong>src/pages/</strong> — Les pages de l'application :<br>
+     <code>PlanningPage.tsx</code> (grille de planning),
+     <code>PlansPage.tsx</code> (liste des plans),
+     <code>QuestionsPage.tsx</code> (questions),
+     <code>ChantierPage.tsx</code> (vue chantier),
+     <code>GanttPage.tsx</code> (vue Gantt),
+     <code>CreerOFPage.tsx</code> (creation d'OF),
+     <code>PersonCalendarPage.tsx</code> (calendrier personnel)<br><br>
+     <strong>src/components/</strong> — Les composants reutilisables (boutons, modales, grilles...)<br>
+     <strong>src/lib/api.ts</strong> — Le client qui communique avec le backend<br>
+     <strong>src/contexts/</strong> — La gestion de l'etat global (PlanningStore)
+    </div></div>
+   </div>
+   <div class="acc" onclick="this.classList.toggle('open')">
+    <button class="acc-h">&#128193; api/ — Le code du serveur (Backend Fastify) <span class="ar">&#9660;</span></button>
+    <div class="acc-b"><div class="acc-c">
+     <strong>api/src/routes/</strong> — 20 fichiers de routes API REST :<br>
+     plans, questions, planning, employees, projects, manufacturing-orders, assignments, absences, sync, attachments, etc.<br><br>
+     <strong>api/src/services/</strong> — La logique metier (synchronisation Fabric, etc.)<br>
+     <strong>api/prisma/schema.prisma</strong> — Le schema de la base de donnees (toutes les tables)<br>
+     <strong>api/prisma/migrations/</strong> — L'historique des modifications de la base
+    </div></div>
+   </div>
+   <div class="acc" onclick="this.classList.toggle('open')">
+    <button class="acc-h">&#128193; docker/ + fichiers racine — L'infrastructure <span class="ar">&#9660;</span></button>
+    <div class="acc-b"><div class="acc-c">
+     <code>docker-compose.yml</code> — Orchestre les 2 conteneurs Docker<br>
+     <code>Dockerfile</code> — Recette pour construire le conteneur frontend<br>
+     <code>api/Dockerfile</code> — Recette pour construire le conteneur backend<br>
+     <code>docker/nginx.conf</code> — Configuration du portier Nginx (proxy, HTTPS, securite)<br>
+     <code>scripts/</code> — Scripts de deploiement et maintenance
+    </div></div>
+   </div>
+  </div>
+ </div>
+</section>
+
+<!-- ============ SECTION 5 : DONNEES ============ -->
+<section id="donnees">
+ <div class="container">
+  <div class="section-hdr reveal">
+   <div class="badge" style="background:var(--blue-l);color:var(--blue)">Section 5</div>
+   <h2>D'ou viennent les donnees ?</h2>
+   <p>La synchronisation automatique avec le systeme HK via Microsoft Fabric.</p>
+  </div>
+
+  <div class="reveal">
+   <div class="info gr"><div class="ic">&#128260;</div><p><strong>Toutes les heures</strong>, l'application va chercher les donnees a jour dans le systeme HK (via Microsoft Fabric). C'est automatique, aucune action necessaire.</p></div>
+  </div>
+
+  <div class="reveal" style="margin-top:24px">
+   <h3 style="margin-bottom:16px">Ce qui est importe de HK (automatiquement)</h3>
+   <div class="grid3">
+    <div class="card"><h3>&#127970; Filiales</h3><p>CAA Guadeloupe, Martinique, etc. Structure organisationnelle.</p></div>
+    <div class="card"><h3>&#128736; Ateliers et equipes</h3><p>Organisation interne de chaque filiale.</p></div>
+    <div class="card"><h3>&#128100; Employes</h3><p>Noms, matricules, qualifications. Mis a jour automatiquement.</p></div>
+    <div class="card"><h3>&#127959; Chantiers</h3><p>Codes, libelles, dates, statuts. Importes de HK.</p></div>
+    <div class="card"><h3>&#128230; OF et articles</h3><p>Ordres de fabrication et leurs articles associes.</p></div>
+    <div class="card"><h3>&#128188; Clients et affaires</h3><p>Informations commerciales importees du systeme.</p></div>
+   </div>
+  </div>
+
+  <div class="reveal" style="margin-top:32px">
+   <h3 style="margin-bottom:16px">Ce qui est cree localement (dans l'application)</h3>
+   <div class="grid2">
+    <div class="card" style="border-left:4px solid var(--green)">
+     <h3>&#9989; Donnees locales</h3>
+     <ul>
+      <li>Le planning (qui travaille ou, quand)</li>
+      <li>Les absences (CP, RTT, maladie)</li>
+      <li>Les questions et reponses</li>
+      <li>Les plans de fabrication</li>
+      <li>Les pieces jointes (photos, PDF)</li>
+     </ul>
+    </div>
+    <div class="card" style="border-left:4px solid var(--orange)">
+     <h3>&#128274; Jamais ecrasees</h3>
+     <p>Les donnees locales ne sont <strong>JAMAIS ecrasees</strong> par la synchronisation HK. La sync importe uniquement les donnees de reference (employes, chantiers, OF...). Votre planning et vos questions sont toujours en securite.</p>
+    </div>
+   </div>
+  </div>
+
+  <!-- CODE : Fabric sync technique -->
+  <div class="reveal" style="margin-top:32px">
+   <h3 style="margin-bottom:4px">Comment la sync Fabric fonctionne techniquement</h3>
+   <p style="color:var(--g500);font-size:.85rem;margin-bottom:8px">Le backend se connecte au SQL Endpoint Fabric via le protocole TDS (mssql) avec un Service Principal Azure</p>
+   <div class="code-block"><span class="cm">// api/src/services/fabricSync.ts (simplifie)</span>
+<span class="kw">import</span> sql <span class="kw">from</span> <span class="str">'mssql'</span>;
+<span class="kw">import</span> { <span class="tp">DefaultAzureCredential</span> } <span class="kw">from</span> <span class="str">'@azure/identity'</span>;
+
+<span class="kw">async function</span> <span class="fn">syncFromFabric</span>() {
+  <span class="cm">// 1. Auth via Service Principal (client_id + client_secret)</span>
+  <span class="kw">const</span> credential = <span class="kw">new</span> <span class="fn">DefaultAzureCredential</span>();
+  <span class="kw">const</span> token = <span class="kw">await</span> credential.<span class="fn">getToken</span>(<span class="str">'https://database.windows.net/.default'</span>);
+
+  <span class="cm">// 2. Connexion au SQL Endpoint Fabric</span>
+  <span class="kw">const</span> pool = <span class="kw">await</span> sql.<span class="fn">connect</span>({
+    server: process.env.<span class="attr">FABRIC_SQL_ENDPOINT</span>,  <span class="cm">// ex: xxxx.datawarehouse.fabric.microsoft.com</span>
+    database: process.env.<span class="attr">FABRIC_DATABASE</span>,
+    authentication: { type: <span class="str">'azure-active-directory-access-token'</span>, options: { token: token.token } },
+  });
+
+  <span class="cm">// 3. Requetes SELECT sur les tables Fabric (warehouse)</span>
+  <span class="kw">const</span> employees = <span class="kw">await</span> pool.<span class="fn">request</span>().<span class="fn">query</span>(<span class="str">'SELECT * FROM wh_employees'</span>);
+  <span class="kw">const</span> projects  = <span class="kw">await</span> pool.<span class="fn">request</span>().<span class="fn">query</span>(<span class="str">'SELECT * FROM wh_projects'</span>);
+
+  <span class="cm">// 4. Upsert dans SQLite via Prisma (create or update)</span>
+  <span class="kw">for</span> (<span class="kw">const</span> emp <span class="kw">of</span> employees.recordset) {
+    <span class="kw">await</span> prisma.employee.<span class="fn">upsert</span>({
+      <span class="attr">where</span>: { code: emp.code },
+      <span class="attr">create</span>: { code: emp.code, firstName: emp.firstName, lastName: emp.lastName },
+      <span class="attr">update</span>: { firstName: emp.firstName, lastName: emp.lastName },
+    });
+  }
+}
+
+<span class="cm">// 5. Planifie via node-cron (toutes les heures)</span>
+cron.<span class="fn">schedule</span>(process.env.<span class="attr">FABRIC_SYNC_CRON</span> || <span class="str">'0 * * * *'</span>, syncFromFabric);</div>
+  </div>
+
+  <div class="reveal" style="margin-top:24px">
+   <h3 style="margin-bottom:4px">Variables d'environnement backend (api/.env)</h3>
+   <p style="color:var(--g500);font-size:.85rem;margin-bottom:8px">Tous les secrets et parametres sont dans ce fichier, ignore par Git (.gitignore)</p>
+   <div class="code-block"><span class="cm"># api/.env (exemple — NE PAS commiter !)</span>
+<span class="attr">DATABASE_URL</span>=<span class="str">"file:/data/planning.sqlite"</span>
+<span class="attr">PORT</span>=<span class="num">3001</span>
+
+<span class="cm"># Azure AD / MSAL</span>
+<span class="attr">AZURE_TENANT_ID</span>=<span class="str">"xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"</span>
+<span class="attr">AZURE_CLIENT_ID</span>=<span class="str">"xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"</span>
+<span class="attr">AZURE_CLIENT_SECRET</span>=<span class="str">"***secret***"</span>
+
+<span class="cm"># Microsoft Fabric SQL Endpoint</span>
+<span class="attr">FABRIC_SQL_ENDPOINT</span>=<span class="str">"xxxx.datawarehouse.fabric.microsoft.com"</span>
+<span class="attr">FABRIC_DATABASE</span>=<span class="str">"DW_CAA"</span>
+<span class="attr">FABRIC_SYNC_CRON</span>=<span class="str">"0 * * * *"</span>          <span class="cm"># toutes les heures</span>
+
+<span class="cm"># Backup</span>
+<span class="attr">BACKUP_CRON</span>=<span class="str">"0 2 * * *"</span>              <span class="cm"># tous les jours a 2h</span>
+<span class="attr">BACKUP_DIR</span>=<span class="str">"/var/backups/planning"</span>
+<span class="attr">BACKUP_RETENTION</span>=<span class="num">30</span></div>
+  </div>
+
+  <div class="reveal" style="margin-top:32px">
+   <h3 style="text-align:center;margin-bottom:12px">Le flux des donnees</h3>
+   <div class="flow">
+    <div class="flow-s"><div class="circ" style="background:var(--red-l);color:var(--red)">&#127970;</div><h5>Systeme HK</h5><small>Base de donnees ERP</small></div>
+    <div class="flow-a">&#10140;</div>
+    <div class="flow-s"><div class="circ" style="background:var(--orange-l);color:var(--orange)">&#128268;</div><h5>Power BI Gateway</h5><small>Passerelle reseau</small></div>
+    <div class="flow-a">&#10140;</div>
+    <div class="flow-s"><div class="circ" style="background:var(--blue-l);color:var(--blue)">&#9729;</div><h5>Microsoft Fabric</h5><small>Data Warehouse</small></div>
+    <div class="flow-a">&#10140;</div>
+    <div class="flow-s"><div class="circ" style="background:var(--green-l);color:var(--green)">&#128260;</div><h5>Sync auto</h5><small>Toutes les heures</small></div>
+    <div class="flow-a">&#10140;</div>
+    <div class="flow-s"><div class="circ" style="background:var(--purple-l);color:var(--purple)">&#128451;</div><h5>SQLite</h5><small>Base de l'appli</small></div>
+    <div class="flow-a">&#10140;</div>
+    <div class="flow-s"><div class="circ" style="background:var(--blue-l);color:var(--blue)">&#128187;</div><h5>Votre ecran</h5><small>Donnees a jour !</small></div>
+   </div>
+  </div>
+ </div>
+</section>
+
+<!-- ============ SECTION 6 : MISE A JOUR ============ -->
+<section id="maj">
+ <div class="container">
+  <div class="section-hdr reveal">
+   <div class="badge" style="background:var(--green-l);color:var(--green)">Section 6</div>
+   <h2>Comment on met a jour l'application ?</h2>
+   <p>Le processus est entierement automatique.</p>
+  </div>
+
+  <div class="reveal">
+   <div class="info gr"><div class="ic">&#127881;</div><p><strong>Bonne nouvelle :</strong> vous n'avez rien a faire ! Quand le developpeur envoie ses modifications, le serveur se met a jour tout seul en quelques minutes.</p></div>
+  </div>
+
+  <div class="reveal" style="margin-top:24px">
+   <h3 style="text-align:center;margin-bottom:20px">Les 3 etapes de la mise a jour</h3>
+   <div class="tl">
+    <div class="tl-item">
+     <div class="tl-dot"></div>
+     <div class="tl-c"><h4>1. Le developpeur envoie ses modifications</h4><p>Il modifie le code sur son PC (avec Windsurf), puis envoie les changements sur GitHub avec <code>git push</code>. C'est comme sauvegarder un document sur Google Drive.</p></div>
+    </div>
+    <div class="tl-item">
+     <div class="tl-dot" style="background:var(--green)"></div>
+     <div class="tl-c"><h4>2. Le serveur detecte les changements</h4><p>Toutes les 5 minutes, le serveur verifie GitHub. S'il detecte du nouveau code, il le telecharge automatiquement (<code>git pull</code>).</p></div>
+    </div>
+    <div class="tl-item">
+     <div class="tl-dot" style="background:var(--orange)"></div>
+     <div class="tl-c"><h4>3. L'application se reconstruit et redemarre</h4><p>Docker reconstruit les conteneurs avec le nouveau code et les redemarre. L'application est mise a jour ! Les utilisateurs n'ont qu'a rafraichir leur page (F5).</p></div>
+    </div>
+   </div>
+  </div>
+
+  <div class="reveal" style="margin-top:24px">
+   <h3 style="margin-bottom:16px">Deux methodes de mise a jour</h3>
+   <div class="grid2">
+    <div class="card" style="border-top:4px solid var(--green)">
+     <h3>&#9989; Automatique (recommandee)</h3>
+     <ul>
+      <li>Le dev fait <code>git push</code> sur GitHub</li>
+      <li>Le serveur detecte en 5 min max</li>
+      <li>Rebuild + redemarrage automatique</li>
+      <li>Aucune action cote serveur !</li>
+     </ul>
+    </div>
+    <div class="card" style="border-top:4px solid var(--orange)">
+     <h3>&#128295; Manuelle (instantanee)</h3>
+     <ul>
+      <li>Se connecter au serveur en SSH</li>
+      <li>Taper : <code>cd /opt/planning</code></li>
+      <li>Lancer : <code>./scripts/deploy.sh</code></li>
+      <li>Ou : <code>docker compose up -d --build</code></li>
+     </ul>
+    </div>
+   </div>
+  </div>
+
+  <div class="info or reveal" style="margin-top:20px">
+   <div class="ic">&#128161;</div>
+   <p><strong>Les donnees ne sont jamais perdues</strong> lors d'une mise a jour. Le planning, les questions, les plans... tout est dans la base de donnees qui est preservee dans un volume Docker separe.</p>
+  </div>
+
+  <!-- Systemd timer + deploy script technique -->
+  <div class="reveal" style="margin-top:32px">
+   <h3 style="margin-bottom:4px">Le mecanisme d'auto-deploy (systemd timer)</h3>
+   <p style="color:var(--g500);font-size:.85rem;margin-bottom:8px">Un timer systemd sur la VM execute le script de deploiement toutes les 5 minutes</p>
+   <div class="tech-grid">
+    <div class="code-block"><span class="cm"># /etc/systemd/system/planning-update.timer</span>
+[<span class="tp">Unit</span>]
+<span class="attr">Description</span>=<span class="str">Check for planning updates</span>
+
+[<span class="tp">Timer</span>]
+<span class="attr">OnBootSec</span>=<span class="num">2min</span>
+<span class="attr">OnUnitActiveSec</span>=<span class="num">5min</span>       <span class="cm"># toutes les 5 min</span>
+<span class="attr">Persistent</span>=<span class="kw">true</span>
+
+[<span class="tp">Install</span>]
+<span class="attr">WantedBy</span>=<span class="str">timers.target</span></div>
+    <div class="code-block"><span class="cm">#!/bin/bash — scripts/deploy.sh (simplifie)</span>
+<span class="kw">cd</span> <span class="str">/opt/planning</span>
+
+<span class="cm"># Verifie s'il y a du nouveau sur GitHub</span>
+git fetch origin main
+LOCAL=$(<span class="fn">git rev-parse</span> HEAD)
+REMOTE=$(<span class="fn">git rev-parse</span> origin/main)
+
+<span class="kw">if</span> [ <span class="str">"$LOCAL"</span> != <span class="str">"$REMOTE"</span> ]; <span class="kw">then</span>
+  <span class="fn">echo</span> <span class="str">"Nouveau code detecte, deploiement..."</span>
+  git pull origin main
+  docker compose build --no-cache
+  docker compose down
+  docker compose up -d
+  docker image prune -f    <span class="cm"># nettoie</span>
+  <span class="fn">echo</span> <span class="str">"Deploy OK a $(date)"</span> &gt;&gt; <span class="str">/var/log/planning-deploy.log</span>
+<span class="kw">fi</span></div>
+   </div>
+  </div>
+
+  <!-- Dockerfile technique -->
+  <div class="reveal" style="margin-top:24px">
+   <h3 style="margin-bottom:4px">Les Dockerfiles du projet</h3>
+   <p style="color:var(--g500);font-size:.85rem;margin-bottom:8px">Multi-stage build pour le frontend, image slim pour le backend</p>
+   <div class="tech-grid">
+    <div class="code-block"><span class="cm"># Dockerfile (frontend) — Multi-stage</span>
+
+<span class="cm"># Stage 1 : Build avec Node</span>
+<span class="kw">FROM</span> <span class="str">node:20-alpine</span> <span class="kw">AS</span> <span class="fn">build</span>
+<span class="kw">WORKDIR</span> <span class="str">/app</span>
+<span class="kw">COPY</span> package*.json .
+<span class="kw">RUN</span> npm ci
+<span class="kw">COPY</span> . .
+<span class="kw">RUN</span> npm run build       <span class="cm"># Vite → dist/</span>
+
+<span class="cm"># Stage 2 : Servir avec Nginx</span>
+<span class="kw">FROM</span> <span class="str">nginx:alpine</span>
+<span class="kw">COPY</span> --from=<span class="fn">build</span> <span class="str">/app/dist</span> <span class="str">/usr/share/nginx/html</span>
+<span class="kw">COPY</span> <span class="str">docker/nginx.conf</span> <span class="str">/etc/nginx/conf.d/default.conf</span>
+<span class="kw">COPY</span> <span class="str">docker/certs/</span> <span class="str">/etc/nginx/certs/</span>
+<span class="kw">EXPOSE</span> <span class="num">80</span> <span class="num">443</span></div>
+    <div class="code-block"><span class="cm"># api/Dockerfile (backend)</span>
+
+<span class="kw">FROM</span> <span class="str">node:20-slim</span>
+<span class="kw">WORKDIR</span> <span class="str">/app</span>
+<span class="kw">RUN</span> apt-get update && apt-get install -y \\
+    openssl curl       <span class="cm"># pour Prisma + healthcheck</span>
+<span class="kw">COPY</span> package*.json .
+<span class="kw">RUN</span> npm ci --production
+<span class="kw">COPY</span> . .
+<span class="kw">RUN</span> npx prisma generate  <span class="cm"># genere le client Prisma</span>
+<span class="kw">RUN</span> npm run build         <span class="cm"># compile TS → JS</span>
+
+<span class="kw">VOLUME</span> [<span class="str">"/data"</span>]          <span class="cm"># SQLite + uploads</span>
+<span class="kw">EXPOSE</span> <span class="num">3001</span>
+<span class="kw">CMD</span> [<span class="str">"node"</span>, <span class="str">"dist/index.js"</span>]</div>
+   </div>
+  </div>
+ </div>
+</section>
+
+<!-- ============ SECTION 7 : SECURITE ============ -->
+<section id="securite">
+ <div class="container">
+  <div class="section-hdr reveal">
+   <div class="badge" style="background:var(--red-l);color:var(--red)">Section 7</div>
+   <h2>La securite</h2>
+   <p>Comment l'application protege vos donnees et vos acces.</p>
+  </div>
+
+  <div class="grid3 reveal">
+   <div class="card" style="border-top:4px solid var(--blue)">
+    <div class="card-icon" style="background:var(--blue-l);color:var(--blue)">&#128272;</div>
+    <h3>Connexion securisee</h3>
+    <ul>
+     <li>Compte Microsoft professionnel (@caa)</li>
+     <li>Meme identifiant qu'Outlook et Teams</li>
+     <li>Pas de mot de passe supplementaire</li>
+     <li>Seuls les employes CAA autorises</li>
+    </ul>
+   </div>
+   <div class="card" style="border-top:4px solid var(--green)">
+    <div class="card-icon" style="background:var(--green-l);color:var(--green)">&#128274;</div>
+    <h3>Protection des donnees</h3>
+    <ul>
+     <li>Connexion chiffree HTTPS</li>
+     <li>Headers de securite (CSP, HSTS...)</li>
+     <li>Protection anti-abus (rate limiting)</li>
+     <li>Secrets dans un fichier protege (.env)</li>
+    </ul>
+   </div>
+   <div class="card" style="border-top:4px solid var(--orange)">
+    <div class="card-icon" style="background:var(--orange-l);color:var(--orange)">&#128190;</div>
+    <h3>Sauvegardes</h3>
+    <ul>
+     <li>Sauvegarde auto chaque nuit a 2h</li>
+     <li>30 jours de sauvegardes conservees</li>
+     <li>Stockage sur le serveur</li>
+     <li>Restauration possible en 5 minutes</li>
+    </ul>
+   </div>
+  </div>
+
+  <div class="info bl reveal" style="margin-top:24px">
+   <div class="ic">&#127760;</div>
+   <p><strong>Reseau interne uniquement :</strong> l'application n'est accessible que depuis le reseau interne de CAA. Elle n'est pas visible depuis Internet, ce qui ajoute une couche de securite supplementaire.</p>
+  </div>
+ </div>
+</section>
+
+<!-- ============ SECTION 8 : PRATIQUE ============ -->
+<section id="pratique">
+ <div class="container">
+  <div class="section-hdr reveal">
+   <div class="badge" style="background:var(--green-l);color:var(--green)">Section 8</div>
+   <h2>En pratique</h2>
+   <p>Les informations essentielles et les commandes utiles.</p>
+  </div>
+
+  <div class="grid3 reveal">
+   <div class="card" style="border-top:4px solid var(--blue)">
+    <h3>&#127760; Adresses</h3>
+    <ul>
+     <li><strong>Application :</strong> https://192.168.13.51</li>
+     <li><strong>Serveur VM :</strong> 192.168.13.51 (SSH)</li>
+     <li><strong>PC dev :</strong> 192.168.13.50</li>
+    </ul>
+   </div>
+   <div class="card" style="border-top:4px solid var(--green)">
+    <h3>&#128230; Code source</h3>
+    <ul>
+     <li><strong>GitHub :</strong> github.com/CYBERTESTCAA/PLANNING_PREVISIONNEL</li>
+     <li><strong>Branche :</strong> main</li>
+    </ul>
+   </div>
+   <div class="card" style="border-top:4px solid var(--orange)">
+    <h3>&#128336; Automatisations</h3>
+    <ul>
+     <li><strong>Sync HK :</strong> toutes les heures</li>
+     <li><strong>Mise a jour :</strong> toutes les 5 min</li>
+     <li><strong>Sauvegarde :</strong> chaque nuit a 2h</li>
+    </ul>
+   </div>
+  </div>
+
+  <div class="reveal" style="margin-top:32px">
+   <h3 style="margin-bottom:16px">Commandes utiles sur le serveur (via SSH)</h3>
+   <div class="acc" onclick="this.classList.toggle('open')">
+    <button class="acc-h">&#128270; Voir l'etat des conteneurs <span class="ar">&#9660;</span></button>
+    <div class="acc-b"><div class="acc-c"><code>docker compose ps</code><br>Affiche si les 2 conteneurs (web + api) tournent bien. Vous devriez voir <strong>"Up"</strong> pour les deux.</div></div>
+   </div>
+   <div class="acc" onclick="this.classList.toggle('open')">
+    <button class="acc-h">&#128196; Voir les logs en temps reel <span class="ar">&#9660;</span></button>
+    <div class="acc-b"><div class="acc-c"><code>docker compose logs -f api</code> — Logs du backend (requetes, erreurs, sync Fabric)<br><code>docker compose logs -f web</code> — Logs du frontend/Nginx (acces, erreurs)<br>Appuyez sur <strong>Ctrl+C</strong> pour arreter.</div></div>
+   </div>
+   <div class="acc" onclick="this.classList.toggle('open')">
+    <button class="acc-h">&#128260; Redemarrer l'application <span class="ar">&#9660;</span></button>
+    <div class="acc-b"><div class="acc-c"><code>docker compose restart</code> — Redemarre les 2 conteneurs<br><code>docker compose down</code> — Arrete tout<br><code>docker compose up -d</code> — Relance tout en arriere-plan</div></div>
+   </div>
+   <div class="acc" onclick="this.classList.toggle('open')">
+    <button class="acc-h">&#128640; Forcer une mise a jour <span class="ar">&#9660;</span></button>
+    <div class="acc-b"><div class="acc-c"><code>cd /opt/planning</code><br><code>./scripts/deploy.sh</code><br>Ou manuellement : <code>git pull && docker compose up -d --build</code></div></div>
+   </div>
+   <div class="acc" onclick="this.classList.toggle('open')">
+    <button class="acc-h">&#128190; Sauvegarder manuellement <span class="ar">&#9660;</span></button>
+    <div class="acc-b"><div class="acc-c"><code>./scripts/backup.sh</code><br>Cree une copie de la base dans <code>/var/backups/planning/</code></div></div>
+   </div>
+  </div>
+
+  <div class="reveal" style="margin-top:32px">
+   <h3 style="margin-bottom:16px">Pour le developpeur : travailler sur le projet</h3>
+   <div class="grid2">
+    <div class="card">
+     <h3>&#128187; Premiere installation</h3>
+     <ol style="padding-left:20px;font-size:.88rem;color:var(--g600);line-height:2">
+      <li>Installer Node.js 20, Git, Windsurf (ou VS Code)</li>
+      <li>Cloner le projet : <code>git clone [URL GitHub]</code></li>
+      <li>Installer les dependances : <code>npm install</code></li>
+      <li>Installer les dependances API : <code>cd api && npm install</code></li>
+      <li>Copier le fichier <code>api/.env.example</code> en <code>api/.env</code></li>
+      <li>Lancer le frontend : <code>npm run dev</code></li>
+      <li>Lancer le backend : <code>cd api && npm run dev</code></li>
+     </ol>
+    </div>
+    <div class="card">
+     <h3>&#128640; Workflow quotidien</h3>
+     <ol style="padding-left:20px;font-size:.88rem;color:var(--g600);line-height:2">
+      <li>Ouvrir le projet dans Windsurf</li>
+      <li>Lancer le dev : <code>npm run dev</code> + <code>cd api && npm run dev</code></li>
+      <li>Modifier le code (Cascade peut aider !)</li>
+      <li>Tester dans le navigateur (localhost:8080)</li>
+      <li>Sauvegarder : <code>git add .</code></li>
+      <li>Commiter : <code>git commit -m "description"</code></li>
+      <li>Envoyer : <code>git push</code> (mise a jour auto en 5 min)</li>
+     </ol>
+    </div>
+   </div>
+  </div>
+
+  <div class="reveal" style="margin-top:32px">
+   <h3 style="margin-bottom:16px">Exporter un chat Windsurf</h3>
+   <div class="info bl">
+    <div class="ic">&#128172;</div>
+    <p><strong>Pourquoi ?</strong> Pour qu'un autre developpeur comprenne ce qui a ete fait et puisse continuer. L'historique Cascade contient tout le contexte du projet.</p>
+   </div>
+   <div class="grid2" style="margin-top:12px">
+    <div class="card">
+     <h3>Exporter</h3>
+     <ol style="padding-left:20px;font-size:.88rem;color:var(--g600);line-height:2">
+      <li>Ouvrir Windsurf avec le projet</li>
+      <li>Dans le panneau Cascade, cliquer sur <strong>...</strong> en haut</li>
+      <li>Selectionner <strong>Export Chat</strong></li>
+      <li>Sauvegarder le fichier .md genere</li>
+      <li>Le partager avec le nouveau dev</li>
+     </ol>
+    </div>
+    <div class="card">
+     <h3>Importer</h3>
+     <ol style="padding-left:20px;font-size:.88rem;color:var(--g600);line-height:2">
+      <li>Le nouveau dev clone le repo GitHub</li>
+      <li>Ouvre le projet dans Windsurf</li>
+      <li>Colle le contenu exporte dans un nouveau chat</li>
+      <li>Cascade comprend le contexte et peut continuer</li>
+      <li>Alternative : le Checkpoint se charge automatiquement</li>
+     </ol>
+    </div>
+   </div>
+  </div>
+ </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+ <h3>Projet Suivi de Chantiers</h3>
+ <p>CAA Guadeloupe &bull; 2025-2026</p>
+ <p style="margin-top:12px"><a href="https://192.168.13.51">https://192.168.13.51</a> &bull; <a href="https://github.com/CYBERTESTCAA/PLANNING_PREVISIONNEL">GitHub</a></p>
+ <p style="margin-top:20px;font-size:.75rem;color:var(--g500)">Presentation generee pour expliquer l'application de facon simple et accessible.</p>
+</footer>
+
+<!-- ============ JAVASCRIPT ============ -->
+<script>
+// Reveal on scroll
+const obs = new IntersectionObserver((entries) => {
+  entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); obs.unobserve(e.target); }});
+}, { threshold: 0.1 });
+document.querySelectorAll('.reveal').forEach(el => obs.observe(el));
+
+// Active nav link
+const sections = document.querySelectorAll('section[id]');
+const navLinks = document.querySelectorAll('.nav-links a');
+window.addEventListener('scroll', () => {
+  let current = '';
+  sections.forEach(s => { if (window.scrollY >= s.offsetTop - 100) current = s.id; });
+  navLinks.forEach(a => { a.classList.toggle('active', a.getAttribute('href') === '#' + current); });
+  // Close mobile menu on scroll
+  document.querySelector('.nav-links').classList.remove('open');
+});
+
+// Smooth scroll for nav links (close mobile menu)
+navLinks.forEach(a => a.addEventListener('click', () => {
+  document.querySelector('.nav-links').classList.remove('open');
+}));
+</script>
+
+</body>
+</html>

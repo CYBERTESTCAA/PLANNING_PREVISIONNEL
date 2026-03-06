@@ -56,6 +56,8 @@ const Index = () => {
       await api.sync.trigger('manual');
       const s = await api.sync.status();
       setSyncStatus({ inProgress: false, last: s.last });
+      // Reload data after sync completes
+      window.location.reload();
     } catch {}
     finally { setSyncing(false); }
   };

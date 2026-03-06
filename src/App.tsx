@@ -15,7 +15,11 @@ import { AdminProjectsPage } from "./pages/admin/AdminProjectsPage";
 import { AdminManufacturingOrdersPage } from './pages/admin/AdminManufacturingOrdersPage';
 import { AdminSubsidiariesPage } from './pages/admin/AdminSubsidiariesPage';
 import { AdminSyncPage } from './pages/admin/AdminSyncPage';
+import { CreerOFPage } from "./pages/CreerOFPage";
 import { ChantierPage } from "./pages/ChantierPage";
+import { PlansPage } from "./pages/PlansPage";
+import { QuestionsPage } from "./pages/QuestionsPage";
+import { DashboardChantierPage } from "./pages/DashboardChantierPage";
 import NotFound from "./pages/NotFound";
 import { useAuth } from "@/contexts/AuthContext";
 import "./styles/fullcalendar.css";
@@ -46,7 +50,11 @@ const App = () => (
             <Route path="/admin/manufacturing-orders" element={<AdminRoute><AdminManufacturingOrdersPage /></AdminRoute>} />
             <Route path="/admin/subsidiaries" element={<AdminRoute><AdminSubsidiariesPage /></AdminRoute>} />
             <Route path="/admin/sync" element={<AdminRoute><AdminSyncPage /></AdminRoute>} />
+            <Route path="/creer-of" element={<CreerOFPage />} />
             <Route path="/chantier" element={<ChantierPage />} />
+            <Route path="/plans" element={<PlansPage />} />
+            <Route path="/questions" element={<QuestionsPage />} />
+            <Route path="/dashboard-chantier" element={<DashboardChantierPage />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

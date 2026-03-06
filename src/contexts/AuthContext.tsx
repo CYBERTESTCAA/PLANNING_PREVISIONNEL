@@ -62,7 +62,6 @@ function AuthInner({ children }: { children: ReactNode }) {
       setUserEmail(account.username || '');
       // Check admin status via backend /auth/me
       getAccessTokenSilent().then(token => {
-        console.log('[Auth] Token acquired:', token ? `${token.substring(0, 20)}...` : 'NULL');
         if (!token) return;
         const apiUrl = import.meta.env.VITE_API_URL || '';
         fetch(`${apiUrl}/auth/me`, {
@@ -70,7 +69,6 @@ function AuthInner({ children }: { children: ReactNode }) {
         })
           .then(r => r.json())
           .then(data => {
-            console.log('[Auth] /auth/me response:', data);
             setIsAdmin(data.isAdmin === true);
           })
           .catch((err) => {

@@ -13,6 +13,8 @@ api/.env
 .vscode
 .idea
 dbo
+docs
+scripts
 image
 IMAGES TABLES
 *.md

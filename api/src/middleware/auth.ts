@@ -5,6 +5,7 @@ import jwksClient from 'jwks-rsa';
 const TENANT_ID = process.env.AZURE_AD_TENANT_ID || process.env.FABRIC_TENANT_ID || '';
 const CLIENT_ID = process.env.AZURE_AD_CLIENT_ID || '';
 const REQUIRED_GROUP_ID = process.env.AZURE_AD_GROUP_ID || 'bd3a6f77-0a07-4ade-a2e5-d26cd8310297';
+const ADMIN_EMAILS = (process.env.ADMIN_EMAILS || '').split(',').map(e => e.trim().toLowerCase()).filter(Boolean);
 
 const client = jwksClient({
   jwksUri: `https://login.microsoftonline.com/${TENANT_ID}/discovery/v2.0/keys`,
@@ -68,12 +69,18 @@ export async function extractUser(request: FastifyRequest): Promise<AuthUser | n
 
         const payload = decoded as Record<string, any>;
         const groups: string[] = payload.groups || [];
+        const email = (payload.preferred_username || payload.upn || payload.email || '').toLowerCase();
+        const isAdminByGroup = groups.includes(REQUIRED_GROUP_ID);
+        const isAdminByEmail = ADMIN_EMAILS.length > 0 && ADMIN_EMAILS.includes(email);
+        if (!isAdminByGroup && groups.length === 0) {
+          console.warn(`[auth] No groups in token for ${email}. Add "groupMembershipClaims": "SecurityGroup" in Azure app manifest, or use ADMIN_EMAILS env var.`);
+        }
         const user: AuthUser = {
           oid: payload.oid || '',
           name: payload.name || '',
-          email: payload.preferred_username || payload.upn || payload.email || '',
+          email,
           groups,
-          isAdmin: groups.includes(REQUIRED_GROUP_ID),
+          isAdmin: isAdminByGroup || isAdminByEmail,
         };
         resolve(user);
       },

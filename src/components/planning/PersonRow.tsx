@@ -45,7 +45,7 @@ export const PersonRow = ({
     <tr
       ref={trRef}
       className={isEven ? 'grid-row-even' : 'grid-row-odd'}
-      style={rowHeight > 0 ? { height: `${rowHeight}px` } : undefined}
+      style={rowHeight > 0 ? { minHeight: `${rowHeight}px` } : undefined}
     >
       <td className="sticky left-0 z-10 bg-inherit border-r border-grid-border 
                      min-w-[180px] max-w-[220px] relative">
@@ -83,7 +83,7 @@ export const PersonRow = ({
         return (
           <td
             key={dateStr}
-            className={`p-0 border-r border-grid-border last:border-r-0
+            className={`p-0 border-r border-grid-border last:border-r-0 align-top
                        ${isTodayDate ? 'bg-accent/20' : ''}
                        ${isWknd ? 'bg-muted/20' : ''}`}
           >

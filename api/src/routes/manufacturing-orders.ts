@@ -16,7 +16,10 @@ export async function manufacturingOrderRoutes(app: FastifyInstance, prisma: Pri
         projectId: q.projectId || undefined,
         project: q.workshopId ? { workshopId: q.workshopId } : undefined,
       },
-      include: { project: { select: { id: true, code: true, label: true, color: true } } },
+      include: {
+        project: { select: { id: true, code: true, label: true, color: true } },
+        articles: { orderBy: { code: 'asc' } },
+      },
       orderBy: [{ code: 'asc' }],
     });
   });

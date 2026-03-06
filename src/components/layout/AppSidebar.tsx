@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
-import { HardHat, BarChart3, Building2, Calendar, Users, Settings, Database, User, LogIn, LogOut, Shield, Home } from 'lucide-react';
+import { HardHat, BarChart3, Building2, Calendar, Users, Settings, Database, User, LogIn, LogOut, Shield, Home, FileText, MessageCircleQuestion, LayoutDashboard, Package } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 
 const NAV_ITEMS = [
@@ -8,6 +8,16 @@ const NAV_ITEMS = [
   { to: '/gantt', label: 'Vue Gantt', icon: BarChart3 },
   { to: '/chantier', label: 'Chantiers', icon: Building2 },
   { to: '/person-calendar', label: 'Calendrier', icon: Calendar },
+];
+
+const SUIVI_ESPACE1 = [
+  { to: '/creer-of', label: 'Création OF', icon: Package },
+];
+
+const SUIVI_ESPACE2 = [
+  { to: '/dashboard-chantier', label: 'Dashboard', icon: LayoutDashboard },
+  { to: '/plans', label: 'Liste des Plans', icon: FileText },
+  { to: '/questions', label: 'Questions', icon: MessageCircleQuestion },
 ];
 
 const ADMIN_ITEMS = [
@@ -36,15 +46,69 @@ export const AppSidebar = () => {
             <HardHat className="w-5 h-5 text-primary" />
           </div>
           <div className="min-w-0">
-            <div className="text-sm font-bold truncate">Planning Prévi</div>
-            <div className="text-[10px] text-slate-400 truncate">CAA Agencement</div>
+            <div className="text-sm font-bold truncate">Suivi Chantier</div>
+            <div className="text-[10px] text-slate-400 truncate">Groupe CAA</div>
           </div>
         </Link>
       </div>
 
       {/* Main nav */}
       <nav className="flex-1 py-3 px-2 space-y-0.5 overflow-y-auto">
+        <div className="pb-1.5 px-3">
+          <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-widest text-slate-500">
+            <HardHat className="w-3 h-3" />
+            Planning Prévisionnel
+          </div>
+        </div>
         {NAV_ITEMS.map(item => {
+          const active = isActive(item.to);
+          return (
+            <Link
+              key={item.to}
+              to={item.to}
+              className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors
+                ${active
+                  ? 'bg-primary text-white shadow-md'
+                  : 'text-slate-300 hover:bg-white/10 hover:text-white'}`}
+            >
+              <item.icon className="w-4.5 h-4.5 shrink-0" />
+              <span>{item.label}</span>
+            </Link>
+          );
+        })}
+
+        {/* Suivi Chantier — Espace 1 */}
+        <div className="pt-4 pb-1.5 px-3">
+          <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-widest text-slate-500">
+            <Package className="w-3 h-3" />
+            Création OF
+          </div>
+        </div>
+        {SUIVI_ESPACE1.map(item => {
+          const active = isActive(item.to);
+          return (
+            <Link
+              key={item.to}
+              to={item.to}
+              className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors
+                ${active
+                  ? 'bg-primary text-white shadow-md'
+                  : 'text-slate-300 hover:bg-white/10 hover:text-white'}`}
+            >
+              <item.icon className="w-4.5 h-4.5 shrink-0" />
+              <span>{item.label}</span>
+            </Link>
+          );
+        })}
+
+        {/* Suivi Chantier — Espace 2 */}
+        <div className="pt-4 pb-1.5 px-3">
+          <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-widest text-slate-500">
+            <FileText className="w-3 h-3" />
+            Liste Plan
+          </div>
+        </div>
+        {SUIVI_ESPACE2.map(item => {
           const active = isActive(item.to);
           return (
             <Link
@@ -122,7 +186,7 @@ export const AppSidebar = () => {
             Se connecter
           </button>
         )}
-        <div className="text-[9px] text-slate-600 mt-2 px-1">v1.0 — Planning Prévisionnel</div>
+        <div className="text-[9px] text-slate-600 mt-2 px-1">v1.0 — Suivi Chantier</div>
       </div>
     </aside>
   );

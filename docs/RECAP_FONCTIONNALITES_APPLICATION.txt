@@ -1,0 +1,206 @@
+RECAPITULATIF COMPLET - APPLICATION SHIFTWISE PLANNER
+=====================================================
+
+1) OBJECTIF DE L'APPLICATION
+----------------------------
+L'application permet de planifier l'affectation des employés sur des chantiers,
+avec une organisation multi-filiales et multi-ateliers.
+
+Elle couvre :
+- la planification quotidienne/hebdomadaire (AM/PM/FULL),
+- le suivi par chantier,
+- la visualisation Gantt,
+- le calendrier individuel des personnes,
+- l'administration des référentiels (filiales, ateliers, personnel, chantiers, OF),
+- la synchronisation avec une source Fabric (backend).
+
+
+2) ARCHITECTURE GENERALE
+------------------------
+Frontend (React + TypeScript) :
+- Routage via react-router.
+- Etat central via PlanningStoreContext + hooks (usePlanningData).
+- UI avec composants dédiés (planning grid, modales, sélecteurs, etc.).
+
+Backend (Node/Fastify + Prisma + SQLite) :
+- API REST pour toutes les entités (employees, workshops, projects, assignments, absences, tasks...).
+- Synchronisation Fabric via endpoints sync + service fabricSync.
+- Persistance via Prisma.
+
+Mode de fonctionnement des données :
+- Si VITE_API_URL est configuré : mode API réel.
+- Sinon : fallback sur données mock côté frontend.
+
+
+3) ROUTES PRINCIPALES (NAVIGATION UTILISATEUR)
+-----------------------------------------------
+- /                    : Accueil (hub de navigation + état de sync)
+- /planning            : Planning opérationnel (grille de planification)
+- /gantt               : Vue timeline Gantt
+- /chantier            : Vue orientée chantier (pilotage projet)
+- /person-calendar     : Calendrier individuel d'une personne
+- /admin/subsidiaries  : Admin filiales & ateliers
+- /admin/teams         : Admin ateliers + affectation des employés (pool)
+- /admin/people        : Admin personnel
+- /admin/projects      : Admin chantiers/projets
+- /admin/manufacturing-orders : Admin ordres de fabrication (OF)
+
+
+4) PAGE D'ACCUEIL - CE QU'ELLE FAIT
+------------------------------------
+- Affiche les grandes entrées métier (Planning, Gantt, Chantier, Calendrier personnel).
+- Permet de sélectionner une filiale active pour filtrer le reste de l'app.
+- Affiche l'état de synchronisation (dernière sync, compteurs).
+- Permet de déclencher une synchronisation Fabric (si API active).
+- Donne accès rapide aux modules d'administration.
+
+
+5) PLANNING PREVISIONNEL (/planning)
+-------------------------------------
+Fonctionnalités clés :
+- Grille de planning par personne et par jour.
+- Gestion des créneaux : AM, PM, FULL.
+- Ajout/modification/suppression d'affectations.
+- Gestion des absences (CP, RTT, maladie, formation, autre).
+- Multi-affectation (bulk), duplication, export (Excel/PDF).
+- Outils de productivité :
+  - command palette,
+  - barre d'actions groupées,
+  - undo/redo,
+  - journal d'activité,
+  - menu contextuel,
+  - mode validation + demandes de changement,
+  - tâches et réponses collaborateur,
+  - réglage de densité d'affichage.
+- Chargement période via backend (loadPeriod) selon atelier sélectionné.
+
+Logique de filtrage :
+- D'abord filiale, puis atelier, puis équipe (selon vue/usage).
+- Les données affichées (personnes, assignments, absences, tasks) dépendent de ces sélections.
+
+
+6) VUE GANTT (/gantt)
+----------------------
+- Visualise les chantiers sur une timeline.
+- Affiche les couches temporelles projet : contractuel / prévisionnel / réel.
+- Affiche statut et progression des projets.
+- Recharge les données de période autour de la date courante quand atelier sélectionné.
+
+
+7) VUE CHANTIER (/chantier)
+----------------------------
+- Vue centrée projet/chantier.
+- Suivi des intervenants et affectations (AM/PM).
+- Visualisation des OF liés au chantier.
+- Suivi d'avancement et lecture opérationnelle projet.
+
+
+8) CALENDRIER PERSONNEL (/person-calendar)
+-------------------------------------------
+- Sélection filiale > atelier > équipe > personne.
+- Affichage calendrier multi-vues (mois/semaine/jour/année).
+- Fusion des affectations + absences dans un flux d'événements calendrier.
+- En mode API : récupération des données sur fenêtre temporelle étendue.
+- Affiche des statistiques rapides par personne (nb affectations, absences, chantiers distincts).
+
+
+9) ADMINISTRATION DES DONNEES
+------------------------------
+A) Filiales & Ateliers (/admin/subsidiaries)
+- CRUD filiales (code, nom).
+- CRUD ateliers par filiale.
+- Vue arborescente filiale -> ateliers.
+
+B) Ateliers & Affectation employés (/admin/teams)
+- Organisation par filiale.
+- Création/édition/suppression d'ateliers.
+- Affichage des employés par atelier.
+- NOUVELLE LOGIQUE "POOL EMPLOYES" :
+  - Les employés appartiennent d'abord à une filiale.
+  - workshop_id peut être null -> employé non affecté (dans le pool).
+  - Affectation manuelle du pool vers un atelier.
+  - Désaffectation d'un atelier vers le pool.
+
+C) Personnel (/admin/people)
+- Liste/filtre/édition/suppression des personnes.
+- Gestion de l'activité (actif/inactif).
+- Liaison possible avec équipe.
+
+D) Chantiers (/admin/projects)
+- CRUD projets.
+- Champs projet: code, libellé, couleur, statut, progression, dates.
+- Gestion des dates contractuelles et prévisionnelles.
+
+E) Ordres de fabrication (/admin/manufacturing-orders)
+- CRUD OF.
+- OF liés aux projets/chantiers.
+- Recherche et filtres sur les OF.
+
+
+10) MODELE METIER (SIMPLIFIE)
+------------------------------
+Entités principales :
+- Subsidiary (Filiale)
+- Workshop (Atelier)
+- Team (Equipe)
+- Employee (Employé)
+- Project (Chantier)
+- ManufacturingOrder (OF)
+- Assignment (Affectation)
+- Absence
+- Task
+
+Point important du refactor récent :
+- Employee inclut subsidiaryId (obligatoire).
+- Employee.workshopId est nullable.
+- Les employés peuvent exister non affectés à un atelier (pool).
+- Contrainte d'unicité employé par filiale + code.
+
+
+11) API ET FLUX DE DONNEES
+---------------------------
+Client API typé (src/lib/api.ts) :
+- modules : subsidiaries, workshops, teams, employees, projects,
+  manufacturingOrders, assignments, absences, tasks, planning.
+
+Flux standard :
+1. Le frontend lit les sélections (filiale/atelier/équipe).
+2. Il charge les données nécessaires via API (ou mock si API absente).
+3. Les actions utilisateur (create/update/delete) appellent l'endpoint correspondant.
+4. Le store/frontend remappe les données API vers les types UI.
+
+
+12) SYNCHRONISATION FABRIC (BACKEND)
+-------------------------------------
+- Endpoint de déclenchement de sync + endpoint statut.
+- Le service fabricSync récupère les données de la source Fabric,
+  puis upsert dans la base locale.
+- Pour les employés (nouvelle logique), la sync les rattache à la filiale
+  et peut les laisser non affectés à un atelier.
+- Les compteurs de sync sont remontés à l'accueil.
+
+
+13) EXPERIENCE UTILISATEUR ET PRODUCTIVITE
+------------------------------------------
+- Interface orientée production (navigation rapide entre vues).
+- Animations légères (framer-motion).
+- Notifications utilisateur via toasts.
+- Vues complémentaires :
+  - grille opérationnelle (planning),
+  - synthèse temporelle (gantt),
+  - pilotage par projet (chantier),
+  - historique individuel (calendrier personnel).
+
+
+14) RESUME EXECUTIF
+-------------------
+L'application est une plateforme complète de planification RH/projet pour
+un contexte industriel multi-filiales. Elle centralise :
+- la structuration de l'organisation (filiales/ateliers/équipes),
+- la gestion des employés,
+- la planification fine des interventions,
+- le suivi des chantiers/OF,
+- et la synchronisation avec le SI Fabric.
+
+Le refactor "employee pool" renforce la flexibilité : les employés sont gérés
+au niveau filiale puis affectés dynamiquement aux ateliers selon les besoins.

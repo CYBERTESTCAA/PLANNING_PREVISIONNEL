@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, RefreshCw, CheckCircle2, XCircle, AlertTriangle, Clock, Database, Users, Building2, FolderKanban, Wrench, Loader2, Briefcase, FileText, CalendarDays, Contact, Zap } from 'lucide-react';
+import { ArrowLeft, RefreshCw, CheckCircle2, XCircle, AlertTriangle, Clock, Database, Users, Building2, FolderKanban, Wrench, Loader2, Briefcase, FileText, CalendarDays, Contact, Zap, HardDrive, RotateCcw, Shield, Download } from 'lucide-react';
 import { toast } from 'sonner';
 import { api, isApiEnabled, ApiSyncLog, ApiSyncProgress } from '@/lib/api';
 
@@ -80,6 +80,80 @@ export const AdminSyncPage = () => {
     } finally {
       setSyncing(false);
       setProgress(null);
+    }
+  };
+
+  // ── Backup / Restore state ──────────────────────────────────────────
+  const [backups, setBackups] = useState<{ file: string; sizeBytes: number; date: string }[]>([]);
+  const [loadingBackups, setLoadingBackups] = useState(false);
+  const [creatingBackup, setCreatingBackup] = useState(false);
+  const [restoreStep, setRestoreStep] = useState<'idle' | 'confirm' | 'password' | 'restoring'>('idle');
+  const [selectedBackup, setSelectedBackup] = useState<string | null>(null);
+  const [restorePassword, setRestorePassword] = useState('');
+  const [restoreError, setRestoreError] = useState('');
+
+  const loadBackups = useCallback(async () => {
+    if (!isApiEnabled()) return;
+    setLoadingBackups(true);
+    try {
+      const data = await api.backups.list();
+      setBackups(data);
+    } catch { setBackups([]); }
+    finally { setLoadingBackups(false); }
+  }, []);
+
+  useEffect(() => { loadBackups(); }, [loadBackups]);
+
+  const handleCreateBackup = async () => {
+    setCreatingBackup(true);
+    try {
+      const res = await api.backups.create();
+      toast.success(`Backup cr\u00e9\u00e9 : ${res.file}`);
+      await loadBackups();
+    } catch (e: any) {
+      toast.error(`Erreur backup: ${e.message}`);
+    } finally { setCreatingBackup(false); }
+  };
+
+  const handleSelectRestore = (file: string) => {
+    setSelectedBackup(file);
+    setRestoreStep('confirm');
+    setRestorePassword('');
+    setRestoreError('');
+  };
+
+  const handleConfirmRestore = () => {
+    setRestoreStep('password');
+  };
+
+  const handleCancelRestore = () => {
+    setRestoreStep('idle');
+    setSelectedBackup(null);
+    setRestorePassword('');
+    setRestoreError('');
+  };
+
+  const handleSubmitRestore = async () => {
+    if (!selectedBackup) return;
+    setRestoreError('');
+    setRestoreStep('restoring');
+    try {
+      const res = await api.backups.restore(selectedBackup, restorePassword);
+      if (res.ok) {
+        toast.success('Backup restaur\u00e9 avec succ\u00e8s ! La page va se recharger.');
+        setTimeout(() => window.location.reload(), 2000);
+      } else {
+        setRestoreError(res.message || 'Erreur inconnue');
+        setRestoreStep('password');
+      }
+    } catch (e: any) {
+      const msg = e?.message || '';
+      if (msg.includes('403') || msg.includes('incorrect')) {
+        setRestoreError('Mot de passe incorrect');
+      } else {
+        setRestoreError(msg || 'Erreur lors de la restauration');
+      }
+      setRestoreStep('password');
     }
   };
 
@@ -268,6 +342,181 @@ export const AdminSyncPage = () => {
             </div>
           </div>
         )}
+
+        {/* ── Backup / Restore section ────────────────────────────────── */}
+        <div>
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-3">
+              <HardDrive className="w-5 h-5 text-muted-foreground" />
+              <h3 className="text-lg font-semibold text-foreground">Sauvegardes</h3>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={loadBackups}
+                disabled={loadingBackups}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-secondary text-foreground rounded-lg hover:bg-secondary/80 transition-colors border border-border"
+                title="Rafraichir la liste"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${loadingBackups ? 'animate-spin' : ''}`} />
+                Rafraichir
+              </button>
+              <button
+                onClick={handleCreateBackup}
+                disabled={creatingBackup}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
+                title="Créer une sauvegarde maintenant"
+              >
+                <Download className={`w-3.5 h-3.5 ${creatingBackup ? 'animate-spin' : ''}`} />
+                {creatingBackup ? 'Création...' : 'Nouvelle sauvegarde'}
+              </button>
+            </div>
+          </div>
+
+          {/* Restore modal overlay */}
+          {restoreStep !== 'idle' && selectedBackup && (
+            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+              <div className="bg-card border border-border rounded-xl shadow-2xl p-6 max-w-md w-full mx-4">
+                {restoreStep === 'confirm' && (
+                  <>
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center">
+                        <AlertTriangle className="w-5 h-5 text-amber-600" />
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-bold text-foreground">Restaurer une sauvegarde</h3>
+                        <p className="text-sm text-muted-foreground">Cette action est irréversible</p>
+                      </div>
+                    </div>
+                    <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-4">
+                      <p className="text-sm text-amber-800">
+                        Vous allez restaurer la sauvegarde :<br />
+                        <strong className="font-mono">{selectedBackup}</strong>
+                      </p>
+                      <p className="text-xs text-amber-700 mt-2">
+                        Toutes les données actuelles seront remplacées par celles de cette sauvegarde.
+                        Une sauvegarde de sécurité sera créée automatiquement avant la restauration.
+                      </p>
+                    </div>
+                    <p className="text-sm font-medium text-foreground mb-4">Êtes-vous sûr de vouloir continuer ?</p>
+                    <div className="flex gap-3">
+                      <button
+                        onClick={handleCancelRestore}
+                        className="flex-1 px-4 py-2.5 bg-secondary text-foreground rounded-lg hover:bg-secondary/80 transition-colors font-medium border border-border"
+                      >
+                        Non, annuler
+                      </button>
+                      <button
+                        onClick={handleConfirmRestore}
+                        className="flex-1 px-4 py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium"
+                      >
+                        Oui, continuer
+                      </button>
+                    </div>
+                  </>
+                )}
+
+                {restoreStep === 'password' && (
+                  <>
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center">
+                        <Shield className="w-5 h-5 text-red-600" />
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-bold text-foreground">Mot de passe requis</h3>
+                        <p className="text-sm text-muted-foreground">Entrez le mot de passe administrateur</p>
+                      </div>
+                    </div>
+                    <p className="text-sm text-muted-foreground mb-3">
+                      Restauration de : <strong className="font-mono text-foreground">{selectedBackup}</strong>
+                    </p>
+                    {restoreError && (
+                      <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-3">
+                        <p className="text-sm text-red-700 font-medium">{restoreError}</p>
+                      </div>
+                    )}
+                    <input
+                      type="password"
+                      value={restorePassword}
+                      onChange={(e) => setRestorePassword(e.target.value)}
+                      onKeyDown={(e) => e.key === 'Enter' && restorePassword && handleSubmitRestore()}
+                      placeholder="Mot de passe administrateur"
+                      className="w-full px-4 py-2.5 border border-border rounded-lg bg-background text-foreground focus:ring-2 focus:ring-primary focus:border-primary mb-4"
+                      autoFocus
+                    />
+                    <div className="flex gap-3">
+                      <button
+                        onClick={handleCancelRestore}
+                        className="flex-1 px-4 py-2.5 bg-secondary text-foreground rounded-lg hover:bg-secondary/80 transition-colors font-medium border border-border"
+                      >
+                        Annuler
+                      </button>
+                      <button
+                        onClick={handleSubmitRestore}
+                        disabled={!restorePassword}
+                        className="flex-1 px-4 py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium disabled:opacity-50"
+                      >
+                        Restaurer
+                      </button>
+                    </div>
+                  </>
+                )}
+
+                {restoreStep === 'restoring' && (
+                  <div className="text-center py-8">
+                    <Loader2 className="w-10 h-10 animate-spin text-primary mx-auto mb-4" />
+                    <h3 className="text-lg font-bold text-foreground">Restauration en cours...</h3>
+                    <p className="text-sm text-muted-foreground mt-1">Ne fermez pas cette page.</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Backup list */}
+          {backups.length > 0 ? (
+            <div className="bg-card border border-border rounded-xl overflow-hidden">
+              <table className="w-full">
+                <thead>
+                  <tr className="bg-muted/50 text-left">
+                    <th className="px-4 py-3 text-xs font-medium text-muted-foreground">Fichier</th>
+                    <th className="px-4 py-3 text-xs font-medium text-muted-foreground">Date</th>
+                    <th className="px-4 py-3 text-xs font-medium text-muted-foreground text-right">Taille</th>
+                    <th className="px-4 py-3 text-xs font-medium text-muted-foreground text-right">Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {backups.map((b) => (
+                    <tr key={b.file} className="border-t border-border hover:bg-muted/30">
+                      <td className="px-4 py-2.5 text-sm font-mono">{b.file}</td>
+                      <td className="px-4 py-2.5 text-sm text-muted-foreground">{b.date}</td>
+                      <td className="px-4 py-2.5 text-sm text-right font-mono">
+                        {b.sizeBytes < 1024 * 1024
+                          ? `${(b.sizeBytes / 1024).toFixed(0)} KB`
+                          : `${(b.sizeBytes / 1024 / 1024).toFixed(1)} MB`}
+                      </td>
+                      <td className="px-4 py-2.5 text-right">
+                        <button
+                          onClick={() => handleSelectRestore(b.file)}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-amber-50 text-amber-700 border border-amber-200 rounded-lg hover:bg-amber-100 transition-colors"
+                          title="Restaurer cette sauvegarde"
+                        >
+                          <RotateCcw className="w-3.5 h-3.5" />
+                          Restaurer
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : !loadingBackups ? (
+            <div className="border border-border rounded-xl p-8 text-center text-muted-foreground">
+              <HardDrive className="w-10 h-10 mx-auto mb-2 opacity-30" />
+              <p className="text-sm">Aucune sauvegarde disponible.</p>
+              <p className="text-xs mt-1">Cliquez sur "Nouvelle sauvegarde" pour en créer une.</p>
+            </div>
+          ) : null}
+        </div>
 
         {loading && (
           <div className="flex items-center justify-center py-12">

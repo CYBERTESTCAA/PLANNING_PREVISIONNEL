@@ -1,0 +1,793 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Guide Utilisateur — Suivi de Chantiers CAA</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+--blue:#3b82f6;--blue-l:#eff6ff;--green:#22c55e;--green-l:#f0fdf4;
+--orange:#f97316;--orange-l:#fff7ed;--red:#ef4444;--red-l:#fef2f2;
+--purple:#8b5cf6;--purple-l:#f5f3ff;--teal:#14b8a6;--teal-l:#f0fdfa;
+--pink:#ec4899;--pink-l:#fdf2f8;
+--g50:#f8fafc;--g100:#f1f5f9;--g200:#e2e8f0;--g300:#cbd5e1;
+--g400:#94a3b8;--g500:#64748b;--g600:#475569;--g700:#334155;--g800:#1e293b;--g900:#0f172a;
+--r:12px;--shadow:0 1px 3px rgba(0,0,0,.08),0 1px 2px rgba(0,0,0,.06);
+--shadow-lg:0 10px 15px -3px rgba(0,0,0,.1),0 4px 6px -4px rgba(0,0,0,.1);
+}
+html{scroll-behavior:smooth}
+body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;color:var(--g800);background:var(--g50);line-height:1.6}
+a{color:var(--blue);text-decoration:none}
+
+/* NAV */
+nav{position:fixed;top:0;left:0;right:0;z-index:100;background:rgba(255,255,255,.95);backdrop-filter:blur(12px);border-bottom:1px solid var(--g200);transition:box-shadow .3s}
+nav.scrolled{box-shadow:var(--shadow-lg)}
+.nav-inner{max-width:1200px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;padding:12px 24px}
+.nav-logo{font-weight:800;font-size:1.1rem;color:var(--g900)}.nav-logo span{color:var(--blue)}
+.nav-links{display:flex;gap:4px;flex-wrap:wrap}.nav-links a{padding:6px 12px;border-radius:8px;font-size:.82rem;font-weight:500;color:var(--g500);transition:all .2s}.nav-links a:hover,.nav-links a.active{background:var(--blue-l);color:var(--blue)}
+.menu-btn{display:none;background:none;border:none;font-size:1.3rem;cursor:pointer;padding:4px 8px;color:var(--g600)}
+@media(max-width:900px){.nav-links{display:none;position:absolute;top:56px;left:0;right:0;background:#fff;flex-direction:column;padding:12px;border-bottom:1px solid var(--g200);box-shadow:var(--shadow-lg)}.nav-links.open{display:flex}.menu-btn{display:block}}
+
+/* LAYOUT */
+.container{max-width:1100px;margin:0 auto;padding:0 24px}
+section{padding:60px 0}
+section:nth-child(even){background:#fff}
+
+/* HERO */
+.hero{padding:120px 0 60px;background:linear-gradient(135deg,#1e3a5f 0%,#2563eb 50%,#3b82f6 100%);color:#fff;text-align:center;position:relative;overflow:hidden}
+.hero::before{content:'';position:absolute;inset:0;background:url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")}
+.hero h1{font-size:clamp(2rem,5vw,3rem);font-weight:800;margin-bottom:12px;position:relative}
+.hero p{font-size:1.1rem;opacity:.9;max-width:600px;margin:0 auto 24px;position:relative}
+.hero-badge{display:inline-block;padding:6px 16px;background:rgba(255,255,255,.15);border-radius:100px;font-size:.85rem;font-weight:600;backdrop-filter:blur(4px);margin-bottom:16px;position:relative}
+.hero-url{display:inline-block;padding:10px 24px;background:#fff;color:var(--blue);border-radius:100px;font-weight:700;font-size:1rem;position:relative}
+
+/* SECTIONS */
+.section-hdr{text-align:center;margin-bottom:40px}
+.section-hdr h2{font-size:1.8rem;font-weight:800;margin:8px 0}
+.section-hdr p{color:var(--g500);font-size:1rem;max-width:600px;margin:0 auto}
+.badge{display:inline-block;padding:4px 14px;border-radius:100px;font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px}
+
+/* PAGE CARD */
+.page-card{background:#fff;border:1px solid var(--g200);border-radius:var(--r);overflow:hidden;margin-bottom:40px;box-shadow:var(--shadow)}
+.page-card-hdr{padding:24px 28px;border-bottom:1px solid var(--g200);display:flex;align-items:center;gap:16px}
+.page-icon{width:52px;height:52px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:1.5rem;flex-shrink:0}
+.page-card-hdr h3{font-size:1.2rem;font-weight:700;margin-bottom:2px}
+.page-card-hdr .sub{font-size:.85rem;color:var(--g500)}
+.page-card-hdr .route{display:inline-block;padding:2px 10px;background:var(--g100);border-radius:6px;font-size:.75rem;font-family:monospace;color:var(--g600);margin-left:auto}
+.page-body{padding:28px}
+
+/* FEATURE LIST */
+.feat-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:16px 0}
+@media(max-width:700px){.feat-grid{grid-template-columns:1fr}}
+.feat{display:flex;gap:12px;padding:14px;background:var(--g50);border-radius:10px;border:1px solid var(--g200)}
+.feat-ic{width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0}
+.feat h4{font-size:.88rem;font-weight:600;margin-bottom:2px}
+.feat p{font-size:.8rem;color:var(--g500);line-height:1.5}
+
+/* STEP LIST */
+.steps{counter-reset:step;margin:20px 0}
+.step{display:flex;gap:16px;margin-bottom:16px;align-items:flex-start}
+.step::before{counter-increment:step;content:counter(step);width:32px;height:32px;border-radius:50%;background:var(--blue);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.85rem;flex-shrink:0}
+.step-c h4{font-size:.92rem;font-weight:600;margin-bottom:2px}
+.step-c p{font-size:.84rem;color:var(--g500)}
+
+/* TIP / WARNING */
+.tip{display:flex;gap:12px;padding:16px;border-radius:var(--r);margin:16px 0;font-size:.88rem;align-items:flex-start}
+.tip .ic{font-size:1.3rem;flex-shrink:0;margin-top:2px}
+.tip.bl{background:var(--blue-l);border:1px solid #bfdbfe}.tip.gr{background:var(--green-l);border:1px solid #bbf7d0}
+.tip.or{background:var(--orange-l);border:1px solid #fed7aa}.tip.rd{background:var(--red-l);border:1px solid #fecaca}
+.tip.pu{background:var(--purple-l);border:1px solid #ddd6fe}
+
+/* SHORTCUT TABLE */
+.sc-table{width:100%;border-collapse:collapse;font-size:.84rem;margin:12px 0}
+.sc-table th{text-align:left;padding:8px 12px;background:var(--g100);color:var(--g600);font-weight:600;border-bottom:2px solid var(--g200)}
+.sc-table td{padding:8px 12px;border-bottom:1px solid var(--g200);color:var(--g600)}
+.sc-table tr:hover td{background:var(--g50)}
+kbd{display:inline-block;padding:2px 8px;background:var(--g100);border:1px solid var(--g300);border-radius:4px;font-family:monospace;font-size:.78rem;color:var(--g700);box-shadow:0 1px 0 var(--g300)}
+
+/* ACCORDION */
+.acc{margin-bottom:8px;border:1px solid var(--g200);border-radius:var(--r);overflow:hidden}
+.acc-h{display:flex;align-items:center;justify-content:space-between;width:100%;padding:14px 18px;background:var(--g50);border:none;cursor:pointer;font-size:.88rem;font-weight:600;color:var(--g700);text-align:left}
+.acc-h:hover{background:var(--g100)}
+.ar{transition:transform .2s;font-size:.7rem;color:var(--g400)}
+.acc-b{max-height:0;overflow:hidden;transition:max-height .3s ease}
+.acc.open .acc-b{max-height:2000px}.acc.open .ar{transform:rotate(180deg)}
+.acc-c{padding:16px 18px;font-size:.85rem;color:var(--g600);line-height:1.7}
+
+/* GRID */
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+@media(max-width:700px){.grid2,.grid3{grid-template-columns:1fr}}
+
+/* STATUS BADGES */
+.status{display:inline-block;padding:3px 10px;border-radius:100px;font-size:.72rem;font-weight:700}
+.s-red{background:var(--red-l);color:var(--red)}.s-orange{background:var(--orange-l);color:var(--orange)}
+.s-green{background:var(--green-l);color:var(--green)}.s-blue{background:var(--blue-l);color:var(--blue)}
+.s-purple{background:var(--purple-l);color:var(--purple)}
+
+/* TOC */
+.toc{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;margin:24px 0}
+.toc-item{display:flex;align-items:center;gap:10px;padding:12px 16px;background:#fff;border:1px solid var(--g200);border-radius:var(--r);text-decoration:none;color:var(--g700);font-size:.88rem;font-weight:500;transition:all .2s}
+.toc-item:hover{border-color:var(--blue);box-shadow:var(--shadow);transform:translateY(-2px)}
+.toc-ic{width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0}
+
+/* REVEAL */
+.reveal{opacity:0;transform:translateY(20px);transition:all .5s ease}.reveal.visible{opacity:1;transform:translateY(0)}
+
+/* FOOTER */
+footer{background:var(--g900);color:var(--g400);padding:40px 24px;text-align:center}
+footer h3{color:#fff;font-size:1.2rem;margin-bottom:6px}footer p{font-size:.85rem;margin-bottom:3px}footer a{color:var(--blue)}
+
+/* Screenshot placeholder */
+.screenshot{background:var(--g100);border:2px dashed var(--g300);border-radius:var(--r);padding:40px 20px;text-align:center;color:var(--g400);font-size:.85rem;margin:16px 0}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav id="navbar">
+ <div class="nav-inner">
+  <div class="nav-logo">Guide<span> Utilisateur</span></div>
+  <button class="menu-btn" onclick="document.querySelector('.nav-links').classList.toggle('open')" title="Menu">&#9776;</button>
+  <div class="nav-links">
+   <a href="#accueil">Accueil</a>
+   <a href="#connexion">Connexion</a>
+   <a href="#planning">Planning</a>
+   <a href="#chantier">Chantiers</a>
+   <a href="#gantt">Gantt</a>
+   <a href="#calendrier">Calendrier</a>
+   <a href="#plans">Plans</a>
+   <a href="#questions">Questions</a>
+   <a href="#of">Creer OF</a>
+   <a href="#dashboard">Dashboard</a>
+   <a href="#admin">Admin</a>
+   <a href="#astuces">Astuces</a>
+  </div>
+ </div>
+</nav>
+
+<!-- HERO -->
+<div class="hero">
+ <div class="container">
+  <div class="hero-badge">Guide complet v1.0</div>
+  <h1>Guide Utilisateur</h1>
+  <p>Apprenez a utiliser toutes les fonctionnalites de l'application Suivi de Chantiers CAA, page par page.</p>
+  <div class="hero-url">https://192.168.13.51</div>
+ </div>
+</div>
+
+<!-- TABLE OF CONTENTS -->
+<section id="accueil" style="background:#fff">
+ <div class="container">
+  <div class="section-hdr reveal">
+   <div class="badge" style="background:var(--blue-l);color:var(--blue)">Sommaire</div>
+   <h2>Toutes les pages de l'application</h2>
+   <p>Cliquez sur une section pour y acceder directement.</p>
+  </div>
+  <div class="toc reveal">
+   <a href="#connexion" class="toc-item"><div class="toc-ic" style="background:var(--blue-l)">&#128272;</div>Connexion</a>
+   <a href="#planning" class="toc-item"><div class="toc-ic" style="background:var(--green-l)">&#128197;</div>Planning</a>
+   <a href="#chantier" class="toc-item"><div class="toc-ic" style="background:var(--orange-l)">&#127959;</div>Vue Chantier</a>
+   <a href="#gantt" class="toc-item"><div class="toc-ic" style="background:var(--purple-l)">&#128202;</div>Vue Gantt</a>
+   <a href="#calendrier" class="toc-item"><div class="toc-ic" style="background:var(--teal-l)">&#128467;</div>Calendrier Personnel</a>
+   <a href="#plans" class="toc-item"><div class="toc-ic" style="background:var(--pink-l)">&#128196;</div>Plans / Bureau d'Etudes</a>
+   <a href="#questions" class="toc-item"><div class="toc-ic" style="background:var(--purple-l)">&#10067;</div>Questions Techniques</a>
+   <a href="#of" class="toc-item"><div class="toc-ic" style="background:var(--orange-l)">&#128230;</div>Creer des OF</a>
+   <a href="#dashboard" class="toc-item"><div class="toc-ic" style="background:var(--blue-l)">&#128200;</div>Dashboard Chantier</a>
+   <a href="#admin" class="toc-item"><div class="toc-ic" style="background:var(--red-l)">&#9881;</div>Administration</a>
+   <a href="#astuces" class="toc-item"><div class="toc-ic" style="background:var(--green-l)">&#128161;</div>Astuces & Raccourcis</a>
+  </div>
+ </div>
+</section>
+
+<!-- ============ CONNEXION ============ -->
+<section id="connexion">
+ <div class="container">
+  <div class="page-card reveal">
+   <div class="page-card-hdr" style="border-left:4px solid var(--blue)">
+    <div class="page-icon" style="background:var(--blue-l);color:var(--blue)">&#128272;</div>
+    <div><h3>Se connecter a l'application</h3><div class="sub">Authentification via votre compte Microsoft professionnel</div></div>
+   </div>
+   <div class="page-body">
+    <div class="steps">
+     <div class="step"><div class="step-c"><h4>Ouvrir le navigateur</h4><p>Lancez Chrome ou Edge et allez a l'adresse <strong>https://192.168.13.51</strong>. Acceptez le certificat de securite si demande.</p></div></div>
+     <div class="step"><div class="step-c"><h4>Fenetre de connexion Microsoft</h4><p>Une fenetre popup Microsoft apparait automatiquement. Entrez votre adresse email professionnelle <strong>@caa...</strong> (la meme que pour Outlook et Teams).</p></div></div>
+     <div class="step"><div class="step-c"><h4>Validation</h4><p>Entrez votre mot de passe. Si l'authentification MFA est activee, validez sur votre telephone.</p></div></div>
+     <div class="step"><div class="step-c"><h4>Acces a l'application</h4><p>Vous etes connecte ! L'application charge automatiquement la page d'accueil (Planning). Votre nom s'affiche en haut a droite.</p></div></div>
+    </div>
+    <div class="tip bl"><div class="ic">&#128161;</div><p><strong>Astuce :</strong> La session reste active plusieurs heures. Si vous fermez et rouvrez le navigateur, vous serez souvent reconnecte automatiquement sans re-saisir votre mot de passe.</p></div>
+    <div class="tip or"><div class="ic">&#9888;</div><p><strong>Probleme de connexion ?</strong> Verifiez que vous etes bien connecte au reseau interne CAA (VPN si en teletravail). L'application n'est pas accessible depuis Internet.</p></div>
+   </div>
+  </div>
+ </div>
+</section>
+
+<!-- ============ PLANNING ============ -->
+<section id="planning">
+ <div class="container">
+  <div class="page-card reveal">
+   <div class="page-card-hdr" style="border-left:4px solid var(--green)">
+    <div class="page-icon" style="background:var(--green-l);color:var(--green)">&#128197;</div>
+    <div><h3>Le Planning</h3><div class="sub">Page principale — Grille d'affectation des equipes</div></div>
+    <div class="route">/</div>
+   </div>
+   <div class="page-body">
+    <p style="margin-bottom:16px">C'est la page principale de l'application. Elle affiche une <strong>grille hebdomadaire</strong> avec les employes en lignes et les jours en colonnes. Chaque cellule montre les chantiers affectes et les absences.</p>
+
+    <h4 style="margin-bottom:12px">La barre d'outils (en haut)</h4>
+    <div class="feat-grid">
+     <div class="feat"><div class="feat-ic" style="background:var(--blue-l)">&#127970;</div><div><h4>Selecteur de filiale</h4><p>Choisissez votre filiale (ex: CAA Guadeloupe). Filtre tous les ateliers et employes.</p></div></div>
+     <div class="feat"><div class="feat-ic" style="background:var(--green-l)">&#127981;</div><div><h4>Selecteur d'atelier</h4><p>Choisissez un atelier dans la filiale. Ne montre que les equipes de cet atelier.</p></div></div>
+     <div class="feat"><div class="feat-ic" style="background:var(--orange-l)">&#128197;</div><div><h4>Navigation temporelle</h4><p>Fleches gauche/droite pour changer de semaine. Bouton "Aujourd'hui" pour revenir a la semaine en cours.</p></div></div>
+     <div class="feat"><div class="feat-ic" style="background:var(--purple-l)">&#128065;</div><div><h4>Mode d'affichage</h4><p>Basculer entre vue <strong>Semaine</strong>, <strong>Mois</strong> ou <strong>Annee</strong>. La vue annee donne une vision macro.</p></div></div>
+     <div class="feat"><div class="feat-ic" style="background:var(--teal-l)">&#128269;</div><div><h4>Palette de commandes</h4><p>Raccourci <kbd>Ctrl</kbd>+<kbd>K</kbd> pour rechercher rapidement un employe, chantier ou action.</p></div></div>
+     <div class="feat"><div class="feat-ic" style="background:var(--pink-l)">&#128200;</div><div><h4>Densite d'affichage</h4><p>3 modes : Confort (grand), Compact, Ultra-compact. Adaptez selon votre ecran.</p></div></div>
+    </div>
+
+    <h4 style="margin:20px 0 12px">Affecter un employe a un chantier</h4>
+    <div class="steps">
+     <div class="step"><div class="step-c"><h4>Cliquer sur une cellule</h4><p>Cliquez sur la case d'un employe pour un jour donne. La modale d'affectation s'ouvre.</p></div></div>
+     <div class="step"><div class="step-c"><h4>Choisir le(s) chantier(s)</h4><p>Selectionnez un ou plusieurs chantiers dans la liste. Chaque chantier a une couleur pour le differencier. Vous pouvez aussi choisir un OF specifique.</p></div></div>
+     <div class="step"><div class="step-c"><h4>Choisir le creneau</h4><p>Selectionnez <strong>Journee entiere</strong>, <strong>Matin</strong> (AM) ou <strong>Apres-midi</strong> (PM).</p></div></div>
+     <div class="step"><div class="step-c"><h4>Valider</h4><p>Cliquez sur "Affecter". La cellule se remplit avec le code couleur du chantier. L'affectation est sauvegardee immediatement.</p></div></div>
+    </div>
+
+    <h4 style="margin:20px 0 12px">Gerer les absences</h4>
+    <div class="steps">
+     <div class="step"><div class="step-c"><h4>Clic droit sur une cellule</h4><p>Un menu contextuel apparait avec les options : ajouter une absence, supprimer une affectation, dupliquer...</p></div></div>
+     <div class="step"><div class="step-c"><h4>Choisir le type d'absence</h4><p>Types disponibles : <span class="status s-blue">Conge paye</span> <span class="status s-orange">RTT</span> <span class="status s-red">Maladie</span> <span class="status s-purple">Formation</span> <span class="status s-green">Autre</span></p></div></div>
+     <div class="step"><div class="step-c"><h4>La cellule est marquee</h4><p>Un badge colore indique l'absence. Impossible d'affecter un employe absent a un chantier ce jour-la.</p></div></div>
+    </div>
+
+    <h4 style="margin:20px 0 12px">Actions rapides (clic droit)</h4>
+    <div class="feat-grid">
+     <div class="feat"><div class="feat-ic" style="background:var(--green-l)">&#128197;</div><div><h4>Dupliquer sur demain</h4><p>Copie l'affectation sur le jour suivant.</p></div></div>
+     <div class="feat"><div class="feat-ic" style="background:var(--blue-l)">&#128196;</div><div><h4>Dupliquer sur la semaine</h4><p>Copie l'affectation du lundi au vendredi.</p></div></div>
+     <div class="feat"><div class="feat-ic" style="background:var(--orange-l)">&#128260;</div><div><h4>Repeter chaque semaine</h4><p>Repete l'affectation sur les 4 semaines suivantes.</p></div></div>
+     <div class="feat"><div class="feat-ic" style="background:var(--red-l)">&#128465;</div><div><h4>Supprimer</h4><p>Supprime l'affectation ou l'absence selectionnee.</p></div></div>
+    </div>
+
+    <h4 style="margin:20px 0 12px">Autres fonctionnalites du planning</h4>
+    <div class="acc" onclick="this.classList.toggle('open')">
+     <button class="acc-h">&#128202; Taux d'occupation <span class="ar">&#9660;</span></button>
+     <div class="acc-b"><div class="acc-c">Activez le toggle "Taux d'occupation" dans la barre d'outils. Un pourcentage et une barre de progression s'affichent pour chaque employe, montrant combien de jours il est affecte sur la periode visible.</div></div>
+    </div>
+    <div class="acc" onclick="this.classList.toggle('open')">
+     <button class="acc-h">&#9989; Mode validation <span class="ar">&#9660;</span></button>
+     <div class="acc-b"><div class="acc-c">Activez le "Mode validation" pour que chaque modification (ajout, suppression, duplication) genere une <strong>demande de modification</strong> au lieu de s'appliquer immediatement. Un responsable peut ensuite approuver ou rejeter chaque demande depuis le panneau dedie.</div></div>
+    </div>
+    <div class="acc" onclick="this.classList.toggle('open')">
+     <button class="acc-h">&#128196; Export Excel / PDF <span class="ar">&#9660;</span></button>
+     <div class="acc-b"><div class="acc-c">Boutons "Export Excel" et "Export PDF" dans la barre d'outils. Genere un fichier avec le planning de la semaine visible, incluant les employes, chantiers, absences et commentaires.</div></div>
+    </div>
+    <div class="acc" onclick="this.classList.toggle('open')">
+     <button class="acc-h">&#128260; Dupliquer une semaine <span class="ar">&#9660;</span></button>
+     <div class="acc-b"><div class="acc-c">Bouton "Dupliquer semaine" : copie toutes les affectations de la semaine en cours vers la semaine suivante. Utile quand le planning est similaire d'une semaine a l'autre.</div></div>
+    </div>
+    <div class="acc" onclick="this.classList.toggle('open')">
+     <button class="acc-h">&#8617; Annuler / Refaire (Undo/Redo) <span class="ar">&#9660;</span></button>
+     <div class="acc-b"><div class="acc-c">Boutons Annuler et Refaire dans la barre d'outils (ou <kbd>Ctrl</kbd>+<kbd>Z</kbd> / <kbd>Ctrl</kbd>+<kbd>Y</kbd>). Chaque action est enregistree et peut etre annulee. Historique limite aux 20 dernieres actions.</div></div>
+    </div>
+    <div class="acc" onclick="this.classList.toggle('open')">
+     <button class="acc-h">&#128101; Selection multiple <span class="ar">&#9660;</span></button>
+     <div class="acc-b"><div class="acc-c">Activez les cases a cocher pour selectionner plusieurs employes a la fois. La barre d'actions groupees apparait : vous pouvez affecter un chantier ou une absence a tous les employes selectionnes en une seule operation.</div></div>
+    </div>
+    <div class="acc" onclick="this.classList.toggle('open')">
+     <button class="acc-h">&#128203; Journal d'activite <span class="ar">&#9660;</span></button>
+     <div class="acc-b"><div class="acc-c">Ouvrez le panneau "Activite" pour voir l'historique de vos actions : ajouts, suppressions, duplications. Utile pour retracer les modifications effectuees dans la session.</div></div>
+    </div>
+
+    <div class="tip gr" style="margin-top:16px"><div class="ic">&#128161;</div><p><strong>Les jours feries</strong> sont automatiquement detectes et affiches en grise dans la grille. Ils ne comptent pas dans le taux d'occupation.</p></div>
+   </div>
+  </div>
+ </div>
+</section>
+
+<!-- ============ VUE CHANTIER ============ -->
+<section id="chantier">
+ <div class="container">
+  <div class="page-card reveal">
+   <div class="page-card-hdr" style="border-left:4px solid var(--orange)">
+    <div class="page-icon" style="background:var(--orange-l);color:var(--orange)">&#127959;</div>
+    <div><h3>Vue Chantier</h3><div class="sub">Voir le planning inverse : par chantier au lieu de par employe</div></div>
+    <div class="route">/chantier</div>
+   </div>
+   <div class="page-body">
+    <p style="margin-bottom:16px">Cette page inverse la perspective : au lieu de voir "qui travaille quand", vous voyez <strong>"sur ce chantier, qui est affecte chaque jour"</strong>.</p>
+
+    <h4 style="margin-bottom:12px">Comment utiliser cette page</h4>
+    <div class="steps">
+     <div class="step"><div class="step-c"><h4>Selectionner la filiale et l'atelier</h4><p>Comme pour le planning, choisissez d'abord votre filiale puis votre atelier.</p></div></div>
+     <div class="step"><div class="step-c"><h4>Rechercher ou selectionner un chantier</h4><p>Utilisez la barre de recherche pour filtrer par code ou libelle. Cliquez sur un chantier dans la liste de gauche.</p></div></div>
+     <div class="step"><div class="step-c"><h4>Voir le planning du chantier</h4><p>Le panneau de droite affiche une grille hebdomadaire : chaque ligne est un employe affecte, avec les jours en colonnes. Naviguez entre les semaines avec les fleches.</p></div></div>
+    </div>
+
+    <h4 style="margin:20px 0 12px">Informations affichees</h4>
+    <div class="feat-grid">
+     <div class="feat"><div class="feat-ic" style="background:var(--blue-l)">&#128100;</div><div><h4>Employes affectes</h4><p>Liste de tous les employes ayant au moins une affectation sur ce chantier.</p></div></div>
+     <div class="feat"><div class="feat-ic" style="background:var(--green-l)">&#128200;</div><div><h4>Statistiques</h4><p>Nombre total de jours-homme, pourcentage de completion, dates de contrat.</p></div></div>
+     <div class="feat"><div class="feat-ic" style="background:var(--orange-l)">&#128336;</div><div><h4>Suivi du temps</h4><p>Si la saisie des temps est activee : heures reelles vs heures prevues.</p></div></div>
+     <div class="feat"><div class="feat-ic" style="background:var(--purple-l)">&#128204;</div><div><h4>Statut du chantier</h4><p><span class="status s-blue">A planifier</span> <span class="status s-green">En cours</span> <span class="status s-red">Bloque</span> <span class="status s-green">Termine</span></p></div></div>
+    </div>
+
+    <div class="tip bl"><div class="ic">&#128161;</div><p><strong>Cas d'usage :</strong> Le chef d'atelier utilise cette vue pour verifier combien de personnes sont sur un chantier donne cette semaine et s'il manque des ressources.</p></div>
+   </div>
+  </div>
+ </div>
+</section>
+
+<!-- ============ VUE GANTT ============ -->
+<section id="gantt">
+ <div class="container">
+  <div class="page-card reveal">
+   <div class="page-card-hdr" style="border-left:4px solid var(--purple)">
+    <div class="page-icon" style="background:var(--purple-l);color:var(--purple)">&#128202;</div>
+    <div><h3>Vue Gantt</h3><div class="sub">Visualisation timeline de tous les chantiers sur plusieurs mois</div></div>
+    <div class="route">/gantt</div>
+   </div>
+   <div class="page-body">
+    <p style="margin-bottom:16px">La vue Gantt affiche un <strong>diagramme de Gantt</strong> sur 6 mois. Chaque barre horizontale represente un chantier, avec sa duree (date de debut a date de fin de contrat) et le nombre de personnes affectees.</p>
+
+    <h4 style="margin-bottom:12px">Comment lire le Gantt</h4>
+    <div class="feat-grid">
+     <div class="feat"><div class="feat-ic" style="background:var(--blue-l)">&#128204;</div><div><h4>Barres horizontales</h4><p>Chaque barre = un chantier. La longueur represente la duree prevue (date de contrat). La couleur correspond a la couleur du chantier.</p></div></div>
+     <div class="feat"><div class="feat-ic" style="background:var(--green-l)">&#128100;</div><div><h4>Nombre de personnes</h4><p>Sur chaque barre, le nombre d'employes affectes est indique. Plus la barre est epaisse, plus il y a de monde.</p></div></div>
+     <div class="feat"><div class="feat-ic" style="background:var(--orange-l)">&#128197;</div><div><h4>Ligne du jour</h4><p>Une ligne verticale rouge indique la date du jour. Permet de voir en un coup d'oeil ou on en est.</p></div></div>
+     <div class="feat"><div class="feat-ic" style="background:var(--purple-l)">&#128269;</div><div><h4>Filtre par filiale/atelier</h4><p>Memes selecteurs que le planning. Ne montre que les chantiers de l'atelier selectionne.</p></div></div>
+    </div>
+
+    <div class="tip pu"><div class="ic">&#128161;</div><p><strong>Cas d'usage :</strong> Le responsable utilise cette vue pour avoir une vision globale de la charge sur les prochains mois et anticiper les periodes de sous/surcharge.</p></div>
+   </div>
+  </div>
+ </div>
+</section>
+
+<!-- ============ CALENDRIER PERSONNEL ============ -->
+<section id="calendrier">
+ <div class="container">
+  <div class="page-card reveal">
+   <div class="page-card-hdr" style="border-left:4px solid var(--teal)">
+    <div class="page-icon" style="background:var(--teal-l);color:var(--teal)">&#128467;</div>
+    <div><h3>Calendrier Personnel</h3><div class="sub">Vue calendrier individuelle d'un employe</div></div>
+    <div class="route">/person-calendar</div>
+   </div>
+   <div class="page-body">
+    <p style="margin-bottom:16px">Cette page affiche le planning d'<strong>un seul employe</strong> sous forme de calendrier (vue mois, semaine, ou annee multi-mois). Chaque evenement montre le chantier affecte ou l'absence posee.</p>
+
+    <h4 style="margin-bottom:12px">Comment utiliser</h4>
+    <div class="steps">
+     <div class="step"><div class="step-c"><h4>Selectionner filiale, atelier, equipe</h4><p>Utilisez les selecteurs pour naviguer dans l'organisation. Cela filtre la liste des employes.</p></div></div>
+     <div class="step"><div class="step-c"><h4>Choisir un employe</h4><p>Dans le selecteur de personne, choisissez l'employe dont vous voulez voir le calendrier.</p></div></div>
+     <div class="step"><div class="step-c"><h4>Consulter le calendrier</h4><p>Le calendrier interactif affiche : les <strong>chantiers</strong> (colores selon le chantier) et les <strong>absences</strong> (en rouge/orange/bleu selon le type). Naviguez entre les mois avec les fleches.</p></div></div>
+    </div>
+
+    <h4 style="margin:20px 0 12px">Vues disponibles</h4>
+    <div class="grid3">
+     <div class="feat" style="flex-direction:column;align-items:center;text-align:center"><div class="feat-ic" style="background:var(--blue-l)">&#128197;</div><h4>Vue Mois</h4><p>Calendrier mensuel classique avec les evenements par jour.</p></div>
+     <div class="feat" style="flex-direction:column;align-items:center;text-align:center"><div class="feat-ic" style="background:var(--green-l)">&#128336;</div><h4>Vue Semaine</h4><p>Detail jour par jour avec les creneaux matin/apres-midi.</p></div>
+     <div class="feat" style="flex-direction:column;align-items:center;text-align:center"><div class="feat-ic" style="background:var(--purple-l)">&#128467;</div><h4>Vue Multi-mois</h4><p>Vue annuelle sur 12 mois pour une vision globale de l'employe.</p></div>
+    </div>
+
+    <div class="tip gr"><div class="ic">&#128161;</div><p><strong>Cas d'usage :</strong> Un chef d'atelier peut montrer a un employe son planning personnel prevu, avec ses conges et affectations, sur les prochains mois.</p></div>
+   </div>
+  </div>
+ </div>
+</section>
+
+<!-- ============ PLANS / BUREAU D'ETUDES ============ -->
+<section id="plans">
+ <div class="container">
+  <div class="page-card reveal">
+   <div class="page-card-hdr" style="border-left:4px solid var(--pink)">
+    <div class="page-icon" style="background:var(--pink-l);color:var(--pink)">&#128196;</div>
+    <div><h3>Plans / Bureau d'Etudes</h3><div class="sub">Gestion complete des plans de fabrication par chantier</div></div>
+    <div class="route">/plans</div>
+   </div>
+   <div class="page-body">
+    <p style="margin-bottom:16px">Cette page est le centre nevralgique du <strong>Bureau d'Etudes</strong>. Elle gere tous les plans de fabrication d'un chantier : creation, suivi de l'avancement, affectation aux dessinateurs, et gestion des articles/OF associes.</p>
+
+    <h4 style="margin-bottom:12px">Selectionner un chantier</h4>
+    <div class="steps">
+     <div class="step"><div class="step-c"><h4>Menu deroulant en haut</h4><p>Choisissez un chantier dans la liste. Vous pouvez taper le code ou le nom pour filtrer la recherche. Le menu est filtrable par la filiale selectionnee.</p></div></div>
+     <div class="step"><div class="step-c"><h4>Les plans se chargent</h4><p>Les plans du chantier s'affichent en tableau avec les statistiques globales (nombre de plans, % avancement).</p></div></div>
+    </div>
+
+    <h4 style="margin:20px 0 12px">Les 2 onglets</h4>
+    <div class="grid2">
+     <div style="padding:16px;background:var(--blue-l);border-radius:var(--r);border:1px solid #bfdbfe">
+      <h4 style="margin-bottom:8px">&#128196; Bureau d'Etudes</h4>
+      <p style="font-size:.85rem;color:var(--g600)">Tableau des plans avec toutes les colonnes editables :</p>
+      <ul style="font-size:.82rem;color:var(--g600);padding-left:16px;margin-top:8px;line-height:2">
+       <li><strong>Numero de plan</strong> (ex: 001, 002...)</li>
+       <li><strong>Code HK</strong> (reference systeme)</li>
+       <li><strong>Type de fabrication</strong> : Neuf, Reprise, Modif...</li>
+       <li><strong>Etat d'avancement</strong> : <span class="status s-red">A faire</span> <span class="status s-orange">En cours</span> <span class="status s-blue">A diffuser</span> <span class="status s-green">Valide</span> <span class="status s-purple">A modifier</span></li>
+       <li><strong>Etat usinage</strong> : Non commence, En cours, Termine</li>
+       <li><strong>Dessinateur</strong> affecte au plan</li>
+       <li><strong>Dates</strong> : echeance, diffusion, modification</li>
+       <li><strong>Commentaires</strong></li>
+      </ul>
+     </div>
+     <div style="padding:16px;background:var(--green-l);border-radius:var(--r);border:1px solid #bbf7d0">
+      <h4 style="margin-bottom:8px">&#128230; OF et Articles</h4>
+      <p style="font-size:.85rem;color:var(--g600)">Panneau lateral montrant les OF (Ordres de Fabrication) et leurs articles :</p>
+      <ul style="font-size:.82rem;color:var(--g600);padding-left:16px;margin-top:8px;line-height:2">
+       <li>Liste des OF du chantier (depliables)</li>
+       <li>Articles dans chaque OF (code + designation + quantite)</li>
+       <li>Selection d'articles pour creer un plan</li>
+       <li>Association article ↔ plan existant</li>
+       <li>Badge indiquant si un article a deja un plan</li>
+      </ul>
+     </div>
+    </div>
+
+    <h4 style="margin:20px 0 12px">Creer un plan</h4>
+    <div class="steps">
+     <div class="step"><div class="step-c"><h4>Methode 1 : Bouton "+ Nouveau plan"</h4><p>Cliquez sur le bouton en haut. Remplissez le formulaire (numero, type, dessinateur, echeance). Le plan est cree vide et vous pouvez ensuite lui associer des articles.</p></div></div>
+     <div class="step"><div class="step-c"><h4>Methode 2 : Depuis les articles</h4><p>Dans le panneau OF, selectionnez un ou plusieurs articles avec les cases a cocher. Cliquez sur "Creer plan depuis la selection". Un plan est cree et les articles sont automatiquement rattaches.</p></div></div>
+     <div class="step"><div class="step-c"><h4>Methode 3 : Creation groupee</h4><p>Bouton "Creer depuis articles" pour creer plusieurs plans d'un coup a partir de la liste d'articles non encore planifies.</p></div></div>
+    </div>
+
+    <h4 style="margin:20px 0 12px">Modifier un plan</h4>
+    <div class="feat-grid">
+     <div class="feat"><div class="feat-ic" style="background:var(--blue-l)">&#9999;</div><div><h4>Edition inline</h4><p>Cliquez directement sur une cellule du tableau pour modifier la valeur. Sauvegarde automatique.</p></div></div>
+     <div class="feat"><div class="feat-ic" style="background:var(--green-l)">&#128196;</div><div><h4>Panneau d'edition</h4><p>Cliquez sur le crayon d'un plan pour ouvrir un panneau lateral detaille avec tous les champs editables.</p></div></div>
+     <div class="feat"><div class="feat-ic" style="background:var(--red-l)">&#128465;</div><div><h4>Supprimer</h4><p>Bouton poubelle pour supprimer un plan. Confirmation demandee avant suppression.</p></div></div>
+     <div class="feat"><div class="feat-ic" style="background:var(--purple-l)">&#128100;</div><div><h4>Gerer les dessinateurs</h4><p>Bouton "Dessinateurs" pour ajouter, modifier ou desactiver des dessinateurs dans la liste.</p></div></div>
+    </div>
+
+    <h4 style="margin:20px 0 12px">Statistiques</h4>
+    <p style="font-size:.88rem;color:var(--g600);margin-bottom:12px">En haut de la page, un resume en temps reel :</p>
+    <div class="grid3" style="margin-bottom:16px">
+     <div class="feat" style="flex-direction:column;text-align:center"><h4>Total plans</h4><p>Nombre de plans crees pour ce chantier</p></div>
+     <div class="feat" style="flex-direction:column;text-align:center"><h4>% Avancement</h4><p>Repartition par etat (a faire, en cours, valide...)</p></div>
+     <div class="feat" style="flex-direction:column;text-align:center"><h4>Charge dessinateurs</h4><p>Nombre de plans par dessinateur</p></div>
+    </div>
+
+    <div class="tip or"><div class="ic">&#9888;</div><p><strong>Important :</strong> Les filtres "Recherche" et "Etat" en haut du tableau permettent de trouver rapidement un plan. Pensez a remettre les filtres a zero si vous ne trouvez pas un plan.</p></div>
+   </div>
+  </div>
+ </div>
+</section>
+
+<!-- ============ QUESTIONS TECHNIQUES ============ -->
+<section id="questions">
+ <div class="container">
+  <div class="page-card reveal">
+   <div class="page-card-hdr" style="border-left:4px solid var(--purple)">
+    <div class="page-icon" style="background:var(--purple-l);color:var(--purple)">&#10067;</div>
+    <div><h3>Questions Techniques</h3><div class="sub">Suivi des questions et reponses par chantier (Kanban)</div></div>
+    <div class="route">/questions</div>
+   </div>
+   <div class="page-body">
+    <p style="margin-bottom:16px">Cette page gere les <strong>questions techniques</strong> liees a un chantier. Les questions sont affichees en <strong>vue Kanban</strong> (3 colonnes) : Non traite, En cours, Termine.</p>
+
+    <h4 style="margin-bottom:12px">Les 3 colonnes Kanban</h4>
+    <div class="grid3">
+     <div style="padding:16px;background:var(--red-l);border-radius:var(--r);border:1px solid #fecaca;text-align:center">
+      <div style="font-size:1.5rem;margin-bottom:8px">&#128308;</div>
+      <h4>Non traite</h4>
+      <p style="font-size:.82rem;color:var(--g600)">Questions en attente de reponse. A traiter en priorite.</p>
+     </div>
+     <div style="padding:16px;background:var(--orange-l);border-radius:var(--r);border:1px solid #fed7aa;text-align:center">
+      <div style="font-size:1.5rem;margin-bottom:8px">&#128992;</div>
+      <h4>En cours</h4>
+      <p style="font-size:.82rem;color:var(--g600)">Questions en cours de traitement. Une reponse partielle peut exister.</p>
+     </div>
+     <div style="padding:16px;background:var(--green-l);border-radius:var(--r);border:1px solid #bbf7d0;text-align:center">
+      <div style="font-size:1.5rem;margin-bottom:8px">&#128994;</div>
+      <h4>Termine</h4>
+      <p style="font-size:.82rem;color:var(--g600)">Questions resolues avec reponse complete.</p>
+     </div>
+    </div>
+
+    <h4 style="margin:20px 0 12px">Creer une question</h4>
+    <div class="steps">
+     <div class="step"><div class="step-c"><h4>Selectionner un chantier</h4><p>Choisissez le chantier concerne dans le menu deroulant en haut de la page.</p></div></div>
+     <div class="step"><div class="step-c"><h4>Cliquer sur "+ Nouvelle question"</h4><p>Un formulaire apparait. Remplissez : la designation (titre court), le texte de la question detaillee.</p></div></div>
+     <div class="step"><div class="step-c"><h4>Ajouter des pieces jointes (optionnel)</h4><p>Vous pouvez attacher des photos ou documents (PDF, images). Cliquez sur le trombone ou glissez-deposez un fichier.</p></div></div>
+     <div class="step"><div class="step-c"><h4>Valider</h4><p>La question apparait dans la colonne "Non traite" en rouge.</p></div></div>
+    </div>
+
+    <h4 style="margin:20px 0 12px">Repondre et gerer</h4>
+    <div class="feat-grid">
+     <div class="feat"><div class="feat-ic" style="background:var(--blue-l)">&#9999;</div><div><h4>Modifier la reponse</h4><p>Cliquez sur une question pour l'ouvrir. Remplissez le champ "Reponse" et changez le statut.</p></div></div>
+     <div class="feat"><div class="feat-ic" style="background:var(--green-l)">&#9989;</div><div><h4>Changer le statut</h4><p>Passez de "Non traite" a "En cours" puis "Termine" au fur et a mesure du traitement.</p></div></div>
+     <div class="feat"><div class="feat-ic" style="background:var(--orange-l)">&#128206;</div><div><h4>Pieces jointes</h4><p>Ajoutez ou consultez les pieces jointes : photos de chantier, plans PDF, etc. Apercu integre pour les images.</p></div></div>
+     <div class="feat"><div class="feat-ic" style="background:var(--red-l)">&#128465;</div><div><h4>Supprimer</h4><p>Bouton poubelle pour supprimer une question. Confirmation demandee.</p></div></div>
+    </div>
+
+    <div class="tip bl"><div class="ic">&#128161;</div><p><strong>Astuce :</strong> Utilisez les questions pour formaliser les echanges techniques entre le Bureau d'Etudes et l'Atelier. Chaque question est tracee et consultable par tous.</p></div>
+   </div>
+  </div>
+ </div>
+</section>
+
+<!-- ============ CREER OF ============ -->
+<section id="of">
+ <div class="container">
+  <div class="page-card reveal">
+   <div class="page-card-hdr" style="border-left:4px solid var(--orange)">
+    <div class="page-icon" style="background:var(--orange-l);color:var(--orange)">&#128230;</div>
+    <div><h3>Creer des OF</h3><div class="sub">Regrouper les articles en Ordres de Fabrication avec des codes AA-ZZ</div></div>
+    <div class="route">/creer-of</div>
+   </div>
+   <div class="page-body">
+    <p style="margin-bottom:16px">Cette page permet de <strong>regrouper les articles</strong> d'un chantier en <strong>Ordres de Fabrication</strong> en leur attribuant des codes de 2 lettres (AA, AB, AC... ZZ). Les articles avec le meme code sont automatiquement regroupes dans le meme OF.</p>
+
+    <h4 style="margin-bottom:12px">Comment creer des OF</h4>
+    <div class="steps">
+     <div class="step"><div class="step-c"><h4>Selectionner un chantier</h4><p>Choisissez le chantier dans le menu deroulant.</p></div></div>
+     <div class="step"><div class="step-c"><h4>Voir la liste des articles</h4><p>Un tableau affiche tous les articles du chantier avec : code article, designation, OF d'origine, quantite, et le code attribue.</p></div></div>
+     <div class="step"><div class="step-c"><h4>Cliquer sur un article</h4><p>Un panneau lateral s'ouvre avec une grille de codes (AA a ZZ). Recherchez ou cliquez sur le code voulu.</p></div></div>
+     <div class="step"><div class="step-c"><h4>Repeter pour chaque article</h4><p>Assignez un code a chaque article. Les articles avec le meme code seront dans le meme OF. Le numero d'OF se genere automatiquement.</p></div></div>
+     <div class="step"><div class="step-c"><h4>Sauvegarder</h4><p>Les codes sont sauvegardes automatiquement dans le navigateur (localStorage). Cliquez sur le bouton de sauvegarde pour enregistrer sur le serveur.</p></div></div>
+    </div>
+
+    <div class="tip gr"><div class="ic">&#128161;</div><p><strong>Logique :</strong> Tous les articles ayant le code "AB" seront regroupes dans un meme OF. C'est une facon simple de creer des lots de fabrication par famille de pieces.</p></div>
+    <div class="tip or"><div class="ic">&#9888;</div><p><strong>Brouillon local :</strong> Les codes sont d'abord sauvegardes localement dans votre navigateur. Pensez a sauvegarder sur le serveur avant de fermer la page si vous voulez que vos collegues voient vos modifications.</p></div>
+   </div>
+  </div>
+ </div>
+</section>
+
+<!-- ============ DASHBOARD CHANTIER ============ -->
+<section id="dashboard">
+ <div class="container">
+  <div class="page-card reveal">
+   <div class="page-card-hdr" style="border-left:4px solid var(--blue)">
+    <div class="page-icon" style="background:var(--blue-l);color:var(--blue)">&#128200;</div>
+    <div><h3>Dashboard Chantier</h3><div class="sub">Tableau de bord synthetique par chantier</div></div>
+    <div class="route">/dashboard-chantier</div>
+   </div>
+   <div class="page-body">
+    <p style="margin-bottom:16px">Vue de synthese pour un chantier selectionne. Regroupe en un seul ecran les indicateurs cles : plans, questions, temps passes.</p>
+
+    <h4 style="margin-bottom:12px">Indicateurs affiches</h4>
+    <div class="feat-grid">
+     <div class="feat"><div class="feat-ic" style="background:var(--blue-l)">&#128196;</div><div><h4>Plans de fabrication</h4><p>Nombre total, repartition par etat d'avancement (a faire, en cours, valide...). Barres de progression colorees.</p></div></div>
+     <div class="feat"><div class="feat-ic" style="background:var(--purple-l)">&#10067;</div><div><h4>Questions techniques</h4><p>Nombre par statut (non traite, en cours, termine). Alerte si beaucoup de questions non traitees.</p></div></div>
+     <div class="feat"><div class="feat-ic" style="background:var(--orange-l)">&#128336;</div><div><h4>Temps passes</h4><p>Heures reelles saisies vs heures prevues. Pourcentage de consommation du budget temps.</p></div></div>
+     <div class="feat"><div class="feat-ic" style="background:var(--green-l)">&#128279;</div><div><h4>Liens rapides</h4><p>Boutons pour acceder directement aux pages Plans, Questions, et Vue Chantier du meme chantier.</p></div></div>
+    </div>
+
+    <div class="tip bl"><div class="ic">&#128161;</div><p><strong>Cas d'usage :</strong> Le responsable ouvre ce dashboard en reunion pour donner un apercu rapide de l'etat d'avancement global d'un chantier : plans, questions ouvertes, ressources.</p></div>
+   </div>
+  </div>
+ </div>
+</section>
+
+<!-- ============ ADMINISTRATION ============ -->
+<section id="admin">
+ <div class="container">
+  <div class="section-hdr reveal">
+   <div class="badge" style="background:var(--red-l);color:var(--red)">Administration</div>
+   <h2>Les pages d'administration</h2>
+   <p>Accessibles uniquement aux utilisateurs ayant le role administrateur.</p>
+  </div>
+
+  <!-- Admin Chantiers -->
+  <div class="page-card reveal">
+   <div class="page-card-hdr" style="border-left:4px solid var(--orange)">
+    <div class="page-icon" style="background:var(--orange-l);color:var(--orange)">&#127959;</div>
+    <div><h3>Gestion des Chantiers</h3><div class="sub">Creer, modifier, supprimer des chantiers</div></div>
+    <div class="route">/admin/projects</div>
+   </div>
+   <div class="page-body">
+    <div class="feat-grid">
+     <div class="feat"><div class="feat-ic" style="background:var(--green-l)">&#10133;</div><div><h4>Creer un chantier</h4><p>Code, libelle, couleur, dates de contrat (debut/fin), statut, progression. Le code doit etre unique.</p></div></div>
+     <div class="feat"><div class="feat-ic" style="background:var(--blue-l)">&#9999;</div><div><h4>Modifier</h4><p>Cliquez sur le crayon pour editer. Changez le statut (<span class="status s-blue">A planifier</span> → <span class="status s-green">En cours</span> → <span class="status s-green">Termine</span>), la couleur, les dates.</p></div></div>
+     <div class="feat"><div class="feat-ic" style="background:var(--purple-l)">&#127912;</div><div><h4>Palette de couleurs</h4><p>Choisissez une couleur parmi 20 couleurs predefinies. Utilisee dans tout le planning pour identifier visuellement le chantier.</p></div></div>
+     <div class="feat"><div class="feat-ic" style="background:var(--red-l)">&#128465;</div><div><h4>Supprimer</h4><p>Attention : supprime le chantier et toutes ses affectations. Confirmation requise.</p></div></div>
+    </div>
+    <p style="font-size:.85rem;color:var(--g500);margin-top:12px"><strong>Recherche + filtre par statut + pagination</strong> disponibles pour gerer facilement des centaines de chantiers.</p>
+    <div class="acc" onclick="this.classList.toggle('open')" style="margin-top:12px">
+     <button class="acc-h">&#128230; Voir les OF d'un chantier <span class="ar">&#9660;</span></button>
+     <div class="acc-b"><div class="acc-c">Cliquez sur la fleche a cote d'un chantier pour deplier la liste de ses Ordres de Fabrication. Chaque OF montre son code, libelle et nombre d'articles.</div></div>
+    </div>
+   </div>
+  </div>
+
+  <!-- Admin Personnel -->
+  <div class="page-card reveal">
+   <div class="page-card-hdr" style="border-left:4px solid var(--blue)">
+    <div class="page-icon" style="background:var(--blue-l);color:var(--blue)">&#128101;</div>
+    <div><h3>Gestion du Personnel</h3><div class="sub">Employes, equipes, affectation aux ateliers</div></div>
+    <div class="route">/admin/people</div>
+   </div>
+   <div class="page-body">
+    <div class="feat-grid">
+     <div class="feat"><div class="feat-ic" style="background:var(--green-l)">&#128100;</div><div><h4>Liste des employes</h4><p>Tous les employes actifs de la filiale selectionnee. Code, nom, equipe, atelier.</p></div></div>
+     <div class="feat"><div class="feat-ic" style="background:var(--blue-l)">&#128101;</div><div><h4>Affecter a une equipe</h4><p>Changez l'equipe d'un employe via le menu deroulant. Determinine dans quelle equipe il apparait dans le planning.</p></div></div>
+     <div class="feat"><div class="feat-ic" style="background:var(--orange-l)">&#127981;</div><div><h4>Affecter a un atelier</h4><p>Selection groupee : cochez plusieurs employes puis affectez-les en masse a un atelier.</p></div></div>
+     <div class="feat"><div class="feat-ic" style="background:var(--purple-l)">&#128269;</div><div><h4>Recherche</h4><p>Filtrez par nom ou code employe. Le compteur d'employes non affectes est affiche.</p></div></div>
+    </div>
+    <div class="tip or"><div class="ic">&#9888;</div><p><strong>Important :</strong> Les employes sont importes automatiquement depuis HK. Vous ne pouvez pas creer manuellement un employe, mais vous pouvez modifier son equipe et son atelier.</p></div>
+   </div>
+  </div>
+
+  <!-- Admin Equipes -->
+  <div class="page-card reveal">
+   <div class="page-card-hdr" style="border-left:4px solid var(--green)">
+    <div class="page-icon" style="background:var(--green-l);color:var(--green)">&#128101;</div>
+    <div><h3>Gestion des Equipes</h3><div class="sub">Creer et organiser les equipes par atelier</div></div>
+    <div class="route">/admin/teams</div>
+   </div>
+   <div class="page-body">
+    <p style="font-size:.88rem;color:var(--g600)">Creez des equipes au sein d'un atelier (ex: "Equipe Soudure", "Equipe Montage"). Chaque employe est affecte a une equipe. Les equipes structurent l'affichage dans la grille de planning.</p>
+    <div class="feat-grid" style="margin-top:12px">
+     <div class="feat"><div class="feat-ic" style="background:var(--green-l)">&#10133;</div><div><h4>Creer une equipe</h4><p>Donnez un nom a la nouvelle equipe. Elle est rattachee a l'atelier selectionne.</p></div></div>
+     <div class="feat"><div class="feat-ic" style="background:var(--blue-l)">&#9999;</div><div><h4>Modifier / Supprimer</h4><p>Renommez ou supprimez une equipe. Les employes de l'equipe supprimee deviennent "non affectes".</p></div></div>
+    </div>
+   </div>
+  </div>
+
+  <!-- Admin Filiales -->
+  <div class="page-card reveal">
+   <div class="page-card-hdr" style="border-left:4px solid var(--purple)">
+    <div class="page-icon" style="background:var(--purple-l);color:var(--purple)">&#127970;</div>
+    <div><h3>Filiales & Ateliers</h3><div class="sub">Structure organisationnelle</div></div>
+    <div class="route">/admin/subsidiaries</div>
+   </div>
+   <div class="page-body">
+    <p style="font-size:.88rem;color:var(--g600)">Gerez l'arborescence : <strong>Filiales → Ateliers → Equipes → Employes</strong>. Les filiales et ateliers sont importes depuis HK, mais vous pouvez en creer manuellement si necessaire.</p>
+   </div>
+  </div>
+
+  <!-- Admin OF -->
+  <div class="page-card reveal">
+   <div class="page-card-hdr" style="border-left:4px solid var(--teal)">
+    <div class="page-icon" style="background:var(--teal-l);color:var(--teal)">&#128230;</div>
+    <div><h3>Ordres de Fabrication</h3><div class="sub">Gestion des OF et articles</div></div>
+    <div class="route">/admin/manufacturing-orders</div>
+   </div>
+   <div class="page-body">
+    <p style="font-size:.88rem;color:var(--g600)">Visualisez et gerez les OF par chantier. Creez manuellement des OF si besoin, ajoutez des articles. Les OF importes depuis HK sont en lecture seule.</p>
+   </div>
+  </div>
+
+  <!-- Admin Sync -->
+  <div class="page-card reveal">
+   <div class="page-card-hdr" style="border-left:4px solid var(--red)">
+    <div class="page-icon" style="background:var(--red-l);color:var(--red)">&#128260;</div>
+    <div><h3>Synchronisation Fabric</h3><div class="sub">Historique et declenchement manuel de la sync HK</div></div>
+    <div class="route">/admin/sync</div>
+   </div>
+   <div class="page-body">
+    <div class="feat-grid">
+     <div class="feat"><div class="feat-ic" style="background:var(--green-l)">&#128260;</div><div><h4>Lancer une sync manuelle</h4><p>Bouton "Synchroniser maintenant" pour forcer l'import des donnees HK immediatement au lieu d'attendre le cron.</p></div></div>
+     <div class="feat"><div class="feat-ic" style="background:var(--blue-l)">&#128203;</div><div><h4>Historique des syncs</h4><p>Tableau avec : date, duree, statut (<span class="status s-green">Succes</span> <span class="status s-orange">Partiel</span> <span class="status s-red">Echec</span>), nombre d'enregistrements importes.</p></div></div>
+     <div class="feat"><div class="feat-ic" style="background:var(--orange-l)">&#128200;</div><div><h4>Progression en direct</h4><p>Pendant une sync, une barre de progression montre l'avancement table par table (employes, chantiers, OF...).</p></div></div>
+     <div class="feat"><div class="feat-ic" style="background:var(--red-l)">&#9888;</div><div><h4>Erreurs detaillees</h4><p>En cas d'erreur, le detail est affiche : quelle table a echoue, message d'erreur, recommandation.</p></div></div>
+    </div>
+    <div class="tip rd"><div class="ic">&#9888;</div><p><strong>Si une sync echoue :</strong> Verifiez la connexion reseau vers Azure/Fabric. Consultez les logs (<code>docker compose logs -f api</code>). La sync suivante reessaiera automatiquement.</p></div>
+   </div>
+  </div>
+ </div>
+</section>
+
+<!-- ============ ASTUCES & RACCOURCIS ============ -->
+<section id="astuces">
+ <div class="container">
+  <div class="section-hdr reveal">
+   <div class="badge" style="background:var(--green-l);color:var(--green)">Bonus</div>
+   <h2>Astuces & Raccourcis clavier</h2>
+   <p>Gagnez du temps avec ces raccourcis et bonnes pratiques.</p>
+  </div>
+
+  <div class="reveal">
+   <h4 style="margin-bottom:12px">Raccourcis clavier (sur la page Planning)</h4>
+   <table class="sc-table">
+    <thead><tr><th>Raccourci</th><th>Action</th></tr></thead>
+    <tbody>
+     <tr><td><kbd>Ctrl</kbd> + <kbd>K</kbd></td><td>Ouvrir la palette de commandes (recherche rapide)</td></tr>
+     <tr><td><kbd>Ctrl</kbd> + <kbd>Z</kbd></td><td>Annuler la derniere action</td></tr>
+     <tr><td><kbd>Ctrl</kbd> + <kbd>Y</kbd></td><td>Refaire l'action annulee</td></tr>
+     <tr><td><kbd>F5</kbd></td><td>Rafraichir la page (recharger les donnees)</td></tr>
+     <tr><td>Clic gauche sur cellule</td><td>Ouvrir la modale d'affectation</td></tr>
+     <tr><td>Clic droit sur cellule</td><td>Menu contextuel (supprimer, dupliquer, absence)</td></tr>
+    </tbody>
+   </table>
+  </div>
+
+  <div class="reveal" style="margin-top:32px">
+   <h4 style="margin-bottom:12px">Bonnes pratiques</h4>
+   <div class="grid2">
+    <div class="tip gr"><div class="ic">&#9989;</div><div>
+     <p><strong>Planifiez par semaine</strong> : preparez le planning du lundi au vendredi, puis utilisez "Dupliquer semaine" si la semaine suivante est similaire.</p>
+    </div></div>
+    <div class="tip gr"><div class="ic">&#9989;</div><div>
+     <p><strong>Utilisez les couleurs</strong> : chaque chantier a une couleur unique. En un coup d'oeil, vous voyez la repartition des equipes.</p>
+    </div></div>
+    <div class="tip gr"><div class="ic">&#9989;</div><div>
+     <p><strong>Posez les absences en avance</strong> : saisissez les CP et RTT des qu'ils sont connus. Le planning les prend en compte automatiquement.</p>
+    </div></div>
+    <div class="tip gr"><div class="ic">&#9989;</div><div>
+     <p><strong>Verifiez le taux d'occupation</strong> : activez cette option pour vous assurer que personne n'est surcharge ou sous-utilise.</p>
+    </div></div>
+    <div class="tip bl"><div class="ic">&#128161;</div><div>
+     <p><strong>Questions techniques</strong> : utilisez cette page pour tracer les echanges avec le Bureau d'Etudes. Plus besoin de mails perdus !</p>
+    </div></div>
+    <div class="tip bl"><div class="ic">&#128161;</div><div>
+     <p><strong>Dashboard avant la reunion</strong> : ouvrez le Dashboard Chantier pour presenter l'etat d'avancement en reunion de chantier.</p>
+    </div></div>
+   </div>
+  </div>
+
+  <div class="reveal" style="margin-top:32px">
+   <h4 style="margin-bottom:12px">FAQ - Questions frequentes</h4>
+   <div class="acc" onclick="this.classList.toggle('open')">
+    <button class="acc-h">Les donnees sont-elles sauvegardees automatiquement ? <span class="ar">&#9660;</span></button>
+    <div class="acc-b"><div class="acc-c"><strong>Oui.</strong> Chaque action (affectation, absence, modification) est envoyee au serveur immediatement. Pas besoin de bouton "Sauvegarder". Si vous rechargez la page, tout est toujours la.</div></div>
+   </div>
+   <div class="acc" onclick="this.classList.toggle('open')">
+    <button class="acc-h">Qui peut modifier le planning ? <span class="ar">&#9660;</span></button>
+    <div class="acc-b"><div class="acc-c">Tous les utilisateurs connectes peuvent modifier le planning de leur atelier. Les pages d'administration (chantiers, personnel, sync) sont reservees aux administrateurs.</div></div>
+   </div>
+   <div class="acc" onclick="this.classList.toggle('open')">
+    <button class="acc-h">Que se passe-t-il si je fais une erreur ? <span class="ar">&#9660;</span></button>
+    <div class="acc-b"><div class="acc-c">Utilisez <kbd>Ctrl</kbd>+<kbd>Z</kbd> ou le bouton "Annuler" pour revenir en arriere. Vous pouvez aussi activer le "Mode validation" pour que chaque modification necessite une approbation.</div></div>
+   </div>
+   <div class="acc" onclick="this.classList.toggle('open')">
+    <button class="acc-h">D'ou viennent les employes et les chantiers ? <span class="ar">&#9660;</span></button>
+    <div class="acc-b"><div class="acc-c">Ils sont importes automatiquement depuis le systeme HK via Microsoft Fabric. La synchronisation a lieu toutes les heures. Vous ne pouvez pas creer d'employes manuellement.</div></div>
+   </div>
+   <div class="acc" onclick="this.classList.toggle('open')">
+    <button class="acc-h">L'application est accessible depuis l'exterieur ? <span class="ar">&#9660;</span></button>
+    <div class="acc-b"><div class="acc-c"><strong>Non.</strong> Elle est uniquement accessible depuis le reseau interne CAA. Si vous etes en teletravail, connectez-vous d'abord au VPN de l'entreprise.</div></div>
+   </div>
+   <div class="acc" onclick="this.classList.toggle('open')">
+    <button class="acc-h">Qui contacter en cas de probleme ? <span class="ar">&#9660;</span></button>
+    <div class="acc-b"><div class="acc-c">Contactez l'administrateur IT ou le developpeur en charge du projet. Les logs du serveur sont disponibles via <code>docker compose logs -f api</code> en SSH.</div></div>
+   </div>
+  </div>
+ </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+ <h3>Guide Utilisateur — Suivi de Chantiers</h3>
+ <p>CAA Guadeloupe &bull; 2025-2026</p>
+ <p style="margin-top:12px"><a href="https://192.168.13.51">Acceder a l'application</a> &bull; <a href="presentation.html">Presentation technique</a></p>
+ <p style="margin-top:20px;font-size:.75rem;color:var(--g500)">Guide genere pour aider les utilisateurs a prendre en main l'application.</p>
+</footer>
+
+<!-- ============ JAVASCRIPT ============ -->
+<script>
+// Reveal on scroll
+const obs = new IntersectionObserver((entries) => {
+  entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); obs.unobserve(e.target); }});
+}, { threshold: 0.08 });
+document.querySelectorAll('.reveal').forEach(el => obs.observe(el));
+
+// Nav scroll shadow
+window.addEventListener('scroll', () => {
+  document.getElementById('navbar').classList.toggle('scrolled', window.scrollY > 10);
+});
+
+// Active nav link
+const sections = document.querySelectorAll('section[id]');
+const navLinks = document.querySelectorAll('.nav-links a');
+window.addEventListener('scroll', () => {
+  let current = '';
+  sections.forEach(s => { if (window.scrollY >= s.offsetTop - 120) current = s.id; });
+  navLinks.forEach(a => { a.classList.toggle('active', a.getAttribute('href') === '#' + current); });
+});
+
+// Close mobile menu on link click
+navLinks.forEach(a => a.addEventListener('click', () => {
+  document.querySelector('.nav-links').classList.remove('open');
+}));
+
+// Smooth scroll
+document.querySelectorAll('a[href^="#"]').forEach(a => {
+  a.addEventListener('click', e => {
+    const target = document.querySelector(a.getAttribute('href'));
+    if (target) { e.preventDefault(); target.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+  });
+});
+</script>
+
+</body>
+</html>

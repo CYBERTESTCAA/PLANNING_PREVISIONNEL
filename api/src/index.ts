@@ -1,8 +1,14 @@
 import 'dotenv/config';
+import { resolve, dirname } from 'path';
+import { fileURLToPath } from 'url';
+import { mkdirSync } from 'fs';
 import Fastify from 'fastify';
 import cors from '@fastify/cors';
+import rateLimit from '@fastify/rate-limit';
+import helmet from '@fastify/helmet';
+import multipart from '@fastify/multipart';
+import fastifyStatic from '@fastify/static';
 import { PrismaClient } from '@prisma/client';
-import { z } from 'zod';
 import { projectRoutes } from './routes/projects.js';
 import { assignmentRoutes } from './routes/assignments.js';
 import { absenceRoutes } from './routes/absences.js';
@@ -13,11 +19,19 @@ import { syncRoutes } from './routes/sync.js';
 import { warehouseRoutes } from './routes/warehouse.js';
 import { clientRoutes } from './routes/clients.js';
 import { affaireRoutes } from './routes/affaires.js';
+import { subsidiaryRoutes } from './routes/subsidiaries.js';
+import { workshopRoutes } from './routes/workshops.js';
+import { teamRoutes } from './routes/teams.js';
+import { employeeRoutes } from './routes/employees.js';
 import { timeEntryRoutes } from './routes/time-entries.js';
 import { calendarRoutes } from './routes/calendar.js';
+import planRoutes from './routes/plans.js';
+import dessinateurRoutes from './routes/dessinateurs.js';
+import questionRoutes from './routes/questions.js';
+import attachmentRoutes from './routes/attachments.js';
 import { runFabricSync } from './services/fabricSync.js';
 import { ensureWarehouseTables } from './services/warehouseTables.js';
-import { runBackup } from './services/backup.js';
+import { runBackup, listBackups, restoreBackup, verifyRestorePassword } from './services/backup.js';
 import { attachUser, requireAdmin } from './middleware/auth.js';
 import cron from 'node-cron';
 
@@ -41,15 +55,63 @@ try {
   if (stale.count > 0) console.log(`[startup] Cleaned up ${stale.count} stale RUNNING sync log(s)`);
 } catch { /* SyncLog table may not exist yet */ }
 
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const UPLOADS_DIR = resolve(__dirname, '..', 'uploads');
+mkdirSync(UPLOADS_DIR, { recursive: true });
+
 const server = Fastify({
   logger: true,
 });
 
+await server.register(multipart, { limits: { fileSize: 10 * 1024 * 1024 } });
+await server.register(fastifyStatic, { root: UPLOADS_DIR, prefix: '/uploads/', decorateReply: false });
+
+// ─── Security: Helmet (sets safe defaults for many HTTP headers) ──────────────
+await server.register(helmet, {
+  contentSecurityPolicy: false,       // CSP handled by Nginx (frontend)
+  crossOriginEmbedderPolicy: false,   // MSAL needs unsafe-none
+  crossOriginOpenerPolicy: false,     // MSAL needs unsafe-none
+  crossOriginResourcePolicy: { policy: 'cross-origin' },
+  hsts: false,                        // HSTS handled by Nginx
+});
+
+// ─── Security: Rate limiting (brute-force / DDoS protection) ─────────────────
+await server.register(rateLimit, {
+  max: 200,                  // 200 requests per window per IP
+  timeWindow: '1 minute',
+  allowList: ['127.0.0.1'],  // trust localhost (Nginx → API)
+  keyGenerator: (request) => {
+    // Use X-Real-IP from Nginx if available, else remoteAddress
+    return (request.headers['x-real-ip'] as string) || request.ip;
+  },
+});
+
 await server.register(cors, {
-  origin: true,
+  origin: (origin, cb) => {
+    // No origin = same-origin or server-to-server → always allow
+    if (!origin) return cb(null, true);
+    // If CORS_ORIGIN is set, restrict to those domains; otherwise allow all
+    const corsEnv = process.env.CORS_ORIGIN || '';
+    if (!corsEnv) return cb(null, true);
+    const allowed = corsEnv.split(',').map(s => s.trim()).filter(Boolean);
+    if (allowed.includes(origin)) return cb(null, true);
+    cb(new Error('CORS not allowed'), false);
+  },
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
-  credentials: false,
+  credentials: true,
+  maxAge: 86400,
+});
+
+// ─── Security headers on every API response ──────────────────────────────────
+server.addHook('onSend', async (_request, reply) => {
+  reply.header('X-Content-Type-Options', 'nosniff');
+  reply.header('X-Frame-Options', 'DENY');
+  reply.header('Referrer-Policy', 'strict-origin-when-cross-origin');
+  reply.header('Cache-Control', 'no-store');
+  reply.header('Pragma', 'no-cache');
+  // Prevent browsers from exposing API version/stack info
+  reply.removeHeader('X-Powered-By');
 });
 
 server.get('/health', async () => {
@@ -68,7 +130,11 @@ server.addHook('preHandler', async (request, reply) => {
 
 // ─── Auth endpoint ────────────────────────────────────────────────────────────
 server.get('/auth/me', async (req) => {
-  if (!req.user) return { authenticated: false, isAdmin: false };
+  if (!req.user) {
+    console.warn('[auth/me] No user extracted from token');
+    return { authenticated: false, isAdmin: false };
+  }
+  console.log(`[auth/me] ${req.user.email} — isAdmin: ${req.user.isAdmin}, groups: ${req.user.groups.length}`);
   return {
     authenticated: true,
     isAdmin: req.user.isAdmin,
@@ -77,290 +143,11 @@ server.get('/auth/me', async (req) => {
   };
 });
 
-const SubsidiaryCreateSchema = z.object({
-  code: z.string().trim().min(1),
-  name: z.string().trim().min(1),
-});
-
-server.get('/subsidiaries', async () => {
-  return prisma.subsidiary.findMany({ orderBy: [{ code: 'asc' }] });
-});
-
-server.post('/subsidiaries', async (req, reply) => {
-  const parsed = SubsidiaryCreateSchema.safeParse(req.body);
-  if (!parsed.success) return reply.code(400).send({ message: 'Invalid payload', issues: parsed.error.issues });
-
-  const created = await prisma.subsidiary.create({
-    data: {
-      code: parsed.data.code,
-      name: parsed.data.name,
-    },
-  });
-
-  return reply.code(201).send(created);
-});
-
-server.get('/subsidiaries/:id', async (req, reply) => {
-  const id = (req.params as { id: string }).id;
-  const row = await prisma.subsidiary.findUnique({ where: { id } });
-  if (!row) return reply.code(404).send({ message: 'Not found' });
-  return row;
-});
-
-server.patch('/subsidiaries/:id', async (req, reply) => {
-  const id = (req.params as { id: string }).id;
-  const parsed = SubsidiaryCreateSchema.partial().safeParse(req.body);
-  if (!parsed.success) return reply.code(400).send({ message: 'Invalid payload', issues: parsed.error.issues });
-
-  try {
-    const updated = await prisma.subsidiary.update({ where: { id }, data: parsed.data });
-    return updated;
-  } catch {
-    return reply.code(404).send({ message: 'Not found' });
-  }
-});
-
-server.delete('/subsidiaries/:id', async (req, reply) => {
-  const id = (req.params as { id: string }).id;
-  try {
-    await prisma.subsidiary.delete({ where: { id } });
-    return reply.code(204).send();
-  } catch {
-    return reply.code(404).send({ message: 'Not found' });
-  }
-});
-
-const WorkshopCreateSchema = z.object({
-  subsidiaryId: z.string().uuid(),
-  code: z.string().trim().min(1),
-  name: z.string().trim().min(1),
-  themeColor: z.string().trim().min(1).optional(),
-});
-
-server.get('/workshops', async (req) => {
-  const subsidiaryId = (req.query as { subsidiaryId?: string }).subsidiaryId;
-  return prisma.workshop.findMany({
-    where: subsidiaryId ? { subsidiaryId } : undefined,
-    orderBy: [{ code: 'asc' }],
-  });
-});
-
-server.post('/workshops', async (req, reply) => {
-  const parsed = WorkshopCreateSchema.safeParse(req.body);
-  if (!parsed.success) return reply.code(400).send({ message: 'Invalid payload', issues: parsed.error.issues });
-
-  const created = await prisma.workshop.create({
-    data: {
-      subsidiaryId: parsed.data.subsidiaryId,
-      code: parsed.data.code,
-      name: parsed.data.name,
-      themeColor: parsed.data.themeColor ?? null,
-    },
-  });
-
-  return reply.code(201).send(created);
-});
-
-server.get('/workshops/:id', async (req, reply) => {
-  const id = (req.params as { id: string }).id;
-  const row = await prisma.workshop.findUnique({ where: { id } });
-  if (!row) return reply.code(404).send({ message: 'Not found' });
-  return row;
-});
-
-server.patch('/workshops/:id', async (req, reply) => {
-  const id = (req.params as { id: string }).id;
-  const parsed = WorkshopCreateSchema.partial().safeParse(req.body);
-  if (!parsed.success) return reply.code(400).send({ message: 'Invalid payload', issues: parsed.error.issues });
-
-  try {
-    const updated = await prisma.workshop.update({ where: { id }, data: parsed.data });
-    return updated;
-  } catch {
-    return reply.code(404).send({ message: 'Not found' });
-  }
-});
-
-server.delete('/workshops/:id', async (req, reply) => {
-  const id = (req.params as { id: string }).id;
-  try {
-    await prisma.workshop.delete({ where: { id } });
-    return reply.code(204).send();
-  } catch {
-    return reply.code(404).send({ message: 'Not found' });
-  }
-});
-
-const TeamCreateSchema = z.object({
-  workshopId: z.string().uuid(),
-  name: z.string().trim().min(1),
-  isActive: z.boolean().optional(),
-});
-
-server.get('/teams', async (req) => {
-  const workshopId = (req.query as { workshopId?: string }).workshopId;
-  return prisma.team.findMany({
-    where: workshopId ? { workshopId } : undefined,
-    orderBy: [{ name: 'asc' }],
-  });
-});
-
-server.post('/teams', async (req, reply) => {
-  const parsed = TeamCreateSchema.safeParse(req.body);
-  if (!parsed.success) return reply.code(400).send({ message: 'Invalid payload', issues: parsed.error.issues });
-
-  const created = await prisma.team.create({
-    data: {
-      workshopId: parsed.data.workshopId,
-      name: parsed.data.name,
-      isActive: parsed.data.isActive ?? true,
-    },
-  });
-
-  return reply.code(201).send(created);
-});
-
-server.patch('/teams/:id', async (req, reply) => {
-  const id = (req.params as { id: string }).id;
-  const parsed = TeamCreateSchema.partial().safeParse(req.body);
-  if (!parsed.success) return reply.code(400).send({ message: 'Invalid payload', issues: parsed.error.issues });
-
-  try {
-    const updated = await prisma.team.update({ where: { id }, data: parsed.data });
-    return updated;
-  } catch {
-    return reply.code(404).send({ message: 'Not found' });
-  }
-});
-
-server.delete('/teams/:id', async (req, reply) => {
-  const id = (req.params as { id: string }).id;
-  try {
-    await prisma.team.delete({ where: { id } });
-    return reply.code(204).send();
-  } catch {
-    return reply.code(404).send({ message: 'Not found' });
-  }
-});
-
-const EmployeeCreateSchema = z.object({
-  subsidiaryId: z.string().uuid(),
-  workshopId: z.string().uuid().nullable().optional(),
-  teamId: z.string().uuid().nullable().optional(),
-  code: z.string().trim().min(1),
-  lastName: z.string().trim().min(1),
-  firstName: z.string().trim().min(1),
-  isActive: z.boolean().optional(),
-});
-
-server.get('/employees', async (req) => {
-  const query = req.query as { subsidiaryId?: string; workshopId?: string; teamId?: string; unassigned?: string };
-  const workshopFilter = query.workshopId !== undefined
-    ? { workshopId: query.workshopId || null }
-    : query.unassigned === 'true'
-      ? { workshopId: null }
-      : {};
-  return prisma.employee.findMany({
-    where: {
-      subsidiaryId: query.subsidiaryId,
-      teamId: query.teamId,
-      ...workshopFilter,
-    },
-    orderBy: [{ lastName: 'asc' }, { firstName: 'asc' }],
-  });
-});
-
-server.post('/employees', async (req, reply) => {
-  const parsed = EmployeeCreateSchema.safeParse(req.body);
-  if (!parsed.success) return reply.code(400).send({ message: 'Invalid payload', issues: parsed.error.issues });
-
-  const created = await prisma.employee.create({
-    data: {
-      subsidiaryId: parsed.data.subsidiaryId,
-      workshopId: parsed.data.workshopId ?? null,
-      teamId: parsed.data.teamId ?? null,
-      code: parsed.data.code,
-      lastName: parsed.data.lastName,
-      firstName: parsed.data.firstName,
-      isActive: parsed.data.isActive ?? true,
-    },
-  });
-
-  return reply.code(201).send(created);
-});
-
-server.patch('/employees/:id', async (req, reply) => {
-  const id = (req.params as { id: string }).id;
-  const parsed = EmployeeCreateSchema.partial().safeParse(req.body);
-  if (!parsed.success) return reply.code(400).send({ message: 'Invalid payload', issues: parsed.error.issues });
-
-  try {
-    const updated = await prisma.employee.update({
-      where: { id },
-      data: {
-        ...parsed.data,
-        workshopId: parsed.data.workshopId === undefined ? undefined : parsed.data.workshopId ?? null,
-        teamId: parsed.data.teamId === undefined ? undefined : parsed.data.teamId ?? null,
-      },
-    });
-    return updated;
-  } catch {
-    return reply.code(404).send({ message: 'Not found' });
-  }
-});
-
-server.delete('/employees/:id', async (req, reply) => {
-  const id = (req.params as { id: string }).id;
-  try {
-    await prisma.employee.delete({ where: { id } });
-    return reply.code(204).send();
-  } catch {
-    return reply.code(404).send({ message: 'Not found' });
-  }
-});
-
-// Bulk assign employees to a workshop
-const BulkAssignWorkshopSchema = z.object({
-  employeeIds: z.array(z.string().uuid()).min(1),
-  workshopId: z.string().uuid(),
-});
-
-server.post('/employees/bulk-assign-workshop', async (req, reply) => {
-  const parsed = BulkAssignWorkshopSchema.safeParse(req.body);
-  if (!parsed.success) return reply.code(400).send({ message: 'Invalid payload', issues: parsed.error.issues });
-
-  const { employeeIds, workshopId } = parsed.data;
-  const workshop = await prisma.workshop.findUnique({ where: { id: workshopId } });
-  if (!workshop) return reply.code(404).send({ message: 'Workshop not found' });
-
-  const result = await prisma.employee.updateMany({
-    where: { id: { in: employeeIds } },
-    data: { workshopId },
-  });
-
-  return { updated: result.count, workshopId };
-});
-
-// Bulk assign ALL unassigned employees of a subsidiary to a workshop
-const BulkAssignUnassignedSchema = z.object({
-  subsidiaryId: z.string().uuid(),
-  workshopId: z.string().uuid(),
-});
-
-server.post('/employees/bulk-assign-unassigned', async (req, reply) => {
-  const parsed = BulkAssignUnassignedSchema.safeParse(req.body);
-  if (!parsed.success) return reply.code(400).send({ message: 'Invalid payload', issues: parsed.error.issues });
-
-  const { subsidiaryId, workshopId } = parsed.data;
-  const result = await prisma.employee.updateMany({
-    where: { subsidiaryId, workshopId: null },
-    data: { workshopId },
-  });
-
-  return { updated: result.count, workshopId };
-});
-
 // ─── Modular routes ───────────────────────────────────────────────────────────
+await subsidiaryRoutes(server, prisma);
+await workshopRoutes(server, prisma);
+await teamRoutes(server, prisma);
+await employeeRoutes(server, prisma);
 await projectRoutes(server, prisma);
 await assignmentRoutes(server, prisma);
 await absenceRoutes(server, prisma);
@@ -373,6 +160,10 @@ await clientRoutes(server, prisma);
 await affaireRoutes(server, prisma);
 await timeEntryRoutes(server, prisma);
 await calendarRoutes(server, prisma);
+planRoutes(server, prisma);
+dessinateurRoutes(server, prisma);
+questionRoutes(server, prisma);
+attachmentRoutes(server, prisma, UPLOADS_DIR);
 
 // ─── Fabric sync cron ─────────────────────────────────────────────────────────
 const syncCron = process.env.FABRIC_SYNC_CRON || '0 * * * *';
@@ -399,6 +190,25 @@ server.post('/backup', async (req, reply) => {
   const result = await runBackup(prisma);
   if (!result) return reply.code(500).send({ message: 'Backup failed' });
   return { ok: true, file: result.file, sizeBytes: result.sizeBytes };
+});
+
+// List all backups
+server.get('/backups', async () => {
+  return listBackups();
+});
+
+// Restore a backup (requires password)
+server.post('/backups/restore', async (req, reply) => {
+  const body = req.body as { file?: string; password?: string };
+  if (!body.file || !body.password) {
+    return reply.code(400).send({ message: 'file and password are required' });
+  }
+  if (!verifyRestorePassword(body.password)) {
+    return reply.code(403).send({ message: 'Mot de passe incorrect' });
+  }
+  const result = await restoreBackup(prisma, body.file);
+  if (!result.ok) return reply.code(500).send(result);
+  return result;
 });
 
 // ─── Start ────────────────────────────────────────────────────────────────────

@@ -24,8 +24,8 @@ async function req<T>(path: string, init?: RequestInit): Promise<T> {
   const isWrite = init?.method && init.method !== 'GET';
   const headers: Record<string, string> = hasBody ? { 'Content-Type': 'application/json' } : {};
 
-  // Attach auth token for write requests
-  if (isWrite && _getToken) {
+  // Attach auth token for all requests (read + write)
+  if (_getToken) {
     const token = await _getToken();
     if (token) headers['Authorization'] = `Bearer ${token}`;
   }
@@ -74,7 +74,8 @@ export interface ApiProject {
   client?: ApiClient | null; affaire?: ApiAffaire | null;
   manufacturingOrders?: ApiManufacturingOrder[];
 }
-export interface ApiManufacturingOrder { id: string; projectId: string; code: string; label?: string | null }
+export interface ApiArticle { id: string; manufacturingOrderId: string; code: string; designation?: string | null; quantity?: number | null }
+export interface ApiManufacturingOrder { id: string; projectId: string; code: string; label?: string | null; articles?: ApiArticle[] }
 export interface ApiAssignment {
   id: string; employeeId: string; projectId: string;
   manufacturingOrderId: string | null;
@@ -151,6 +152,63 @@ export interface ApiPlanningPayload {
   assignments: ApiAssignment[];
   absences: ApiAbsence[];
   tasks: ApiTask[];
+}
+
+// ─── Liste de Plans types ────────────────────────────────────────────────────
+export type EtatAvancement = 'A_DIFFUSER' | 'DIFFUSE_ARCHI' | 'EN_ATTENTE' | 'EN_COURS_PLAN' | 'SUPPRIME' | 'VALIDE' | 'A_MODIFIER' | 'A_FAIRE';
+export type EtatUsinage = 'EN_DEBIT' | 'PROGRAMME' | 'USINE';
+export type FabricationType = 'FILIALE' | 'SOUS_TRAITANT' | 'LES_DEUX';
+export type QuestionAvancement = 'NON_TRAITE' | 'EN_COURS_Q' | 'TERMINE';
+
+export interface ApiDessinateur {
+  id: string; nom: string; prenom: string; societe: string; isActive: boolean;
+}
+export interface ApiPlanIndice {
+  id: string; planId: string; indice: string; dateIndice: string; commentaire?: string | null;
+}
+export interface ApiPlan {
+  id: string; projectId: string; hk: string;
+  numPhase?: string | null; numPhaseOF?: string | null; codeOF?: string | null;
+  numPlan?: string | null;
+  cart1?: string | null; cart2?: string | null; cart3?: string | null; cart4?: string | null;
+  cart5?: string | null; cart6?: string | null; cart7?: string | null;
+  dessinateurId?: string | null;
+  fabricationType?: FabricationType | null;
+  etatAvancement: EtatAvancement;
+  datePrevisionnelle?: string | null;
+  dateValidation?: string | null;
+  numFiche?: string | null; dateFicheFab?: string | null;
+  sousTraitance?: string | null;
+  etatUsinage?: EtatUsinage | null;
+  responsableMontage?: string | null;
+  dateDepartAtelier?: string | null;
+  paletisation?: string | null;
+  dateLivraisonChantier?: string | null;
+  commentaires?: string | null;
+  dessinateur?: ApiDessinateur | null;
+  indices: ApiPlanIndice[];
+  project?: { id: string; code: string; label: string; color: string; workshopId?: string };
+  createdAt: string;
+}
+export interface ApiPlanStats {
+  total: number; dessines: number; valides: number;
+  pctDessines: number; pctValides: number;
+  byEtat: Record<string, number>;
+  questions: Record<string, number>;
+}
+export interface ApiQuestionAttachment {
+  id: string; questionId: string; filename: string; mimeType: string; size: number; path: string; createdAt: string;
+}
+export interface ApiQuestion {
+  id: string; projectId: string; designation: string;
+  zone?: string | null; question: string;
+  auteur?: string | null; destinataire?: string | null;
+  dateQuestion: string;
+  reponse?: string | null; dateReponse?: string | null;
+  avancement: QuestionAvancement;
+  project?: { id: string; code: string; label: string; color: string };
+  attachments?: ApiQuestionAttachment[];
+  createdAt: string;
 }
 
 // ─── Subsidiaries ─────────────────────────────────────────────────────────────
@@ -306,6 +364,64 @@ export const api = {
       const q = new URLSearchParams(Object.entries(params).filter(([, v]) => v) as [string, string][]).toString();
       return get<ApiTimeEntrySummary>(`/time-entries/summary${q ? `?${q}` : ''}`);
     },
+  },
+
+  plans: {
+    list: (params: { projectId?: string; workshopId?: string; etatAvancement?: string } = {}) => {
+      const q = new URLSearchParams(Object.entries(params).filter(([, v]) => v) as [string, string][]).toString();
+      return get<ApiPlan[]>(`/plans${q ? `?${q}` : ''}`);
+    },
+    get: (id: string) => get<ApiPlan>(`/plans/${id}`),
+    create: (body: { projectId: string; hk?: string; numPhase?: string; numPhaseOF?: string; codeOF?: string; numPlan?: string }) =>
+      post<ApiPlan>('/plans', body),
+    bulkCreate: (plans: Array<{ projectId: string; hk?: string; numPhase?: string; numPhaseOF?: string; codeOF?: string; numPlan?: string }>) =>
+      post<ApiPlan[]>('/plans/bulk', { plans }),
+    update: (id: string, body: Partial<ApiPlan>) => patch<ApiPlan>(`/plans/${id}`, body),
+    delete: (id: string) => del(`/plans/${id}`),
+    stats: (projectId: string) => get<ApiPlanStats>(`/plans/stats/${projectId}`),
+    addIndice: (planId: string, body: { indice: string; dateIndice: string; commentaire?: string }) =>
+      post<ApiPlanIndice>(`/plans/${planId}/indices`, body),
+    deleteIndice: (indiceId: string) => del(`/plan-indices/${indiceId}`),
+  },
+
+  dessinateurs: {
+    list: (all = false) => get<ApiDessinateur[]>(`/dessinateurs${all ? '?all=true' : ''}`),
+    create: (body: { nom: string; prenom: string; societe: string }) => post<ApiDessinateur>('/dessinateurs', body),
+    update: (id: string, body: Partial<{ nom: string; prenom: string; societe: string; isActive: boolean }>) =>
+      patch<ApiDessinateur>(`/dessinateurs/${id}`, body),
+    toggle: (id: string) => patch<ApiDessinateur>(`/dessinateurs/${id}/toggle`, {}),
+    delete: (id: string) => del(`/dessinateurs/${id}`),
+  },
+
+  questions: {
+    list: (params: { projectId?: string; workshopId?: string; avancement?: string } = {}) => {
+      const q = new URLSearchParams(Object.entries(params).filter(([, v]) => v) as [string, string][]).toString();
+      return get<ApiQuestion[]>(`/questions${q ? `?${q}` : ''}`);
+    },
+    create: (body: { projectId: string; designation: string; question: string; zone?: string; auteur?: string; destinataire?: string }) =>
+      post<ApiQuestion>('/questions', body),
+    update: (id: string, body: Partial<{ designation: string; question: string; reponse: string; dateReponse: string; avancement: QuestionAvancement }>) =>
+      patch<ApiQuestion>(`/questions/${id}`, body),
+    delete: (id: string) => del(`/questions/${id}`),
+    uploadAttachments: async (questionId: string, files: File[]): Promise<ApiQuestionAttachment[]> => {
+      const formData = new FormData();
+      files.forEach(f => formData.append('files', f));
+      const token = sessionStorage.getItem('api_token') || localStorage.getItem('api_token') || '';
+      const res = await fetch(`${BASE}/questions/${questionId}/attachments`, {
+        method: 'POST',
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        body: formData,
+      });
+      if (!res.ok) throw new Error(await res.text());
+      return res.json();
+    },
+    deleteAttachment: (id: string) => del(`/attachments/${id}`),
+  },
+
+  backups: {
+    list: () => get<{ file: string; sizeBytes: number; date: string }[]>('/backups'),
+    create: () => post<{ ok: boolean; file: string; sizeBytes: number }>('/backup', {}),
+    restore: (file: string, password: string) => post<{ ok: boolean; message: string }>('/backups/restore', { file, password }),
   },
 
   calendar: {

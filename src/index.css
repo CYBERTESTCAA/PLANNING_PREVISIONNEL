@@ -155,6 +155,16 @@
     @apply bg-grid-header text-grid-header-foreground font-semibold text-sm py-3 px-2;
   }
 
+  .planning-grid td {
+    vertical-align: top;
+    overflow: visible;
+    height: auto;
+  }
+
+  .planning-grid tr {
+    height: auto;
+  }
+
   .planning-cell {
     @apply border border-grid-border p-1.5 min-h-[64px] transition-colors hover:bg-accent/50 cursor-pointer;
   }

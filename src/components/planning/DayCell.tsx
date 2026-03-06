@@ -4,11 +4,6 @@ import { AssignmentChip } from './AssignmentChip';
 import { AbsenceBadge } from './AbsenceBadge';
 import { Plus, ListTodo } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover';
 
 export type DensityMode = 'compact' | 'comfort' | 'large';
 
@@ -59,8 +54,7 @@ const SlotHalf = ({
   isToday, isEmpty, onCellClick, onRemoveAssignment, onContextMenu,
   onDrop: onDropHandler, onResizeDrop, enableDrag, date,
 }: SlotHalfProps) => {
-  const visible = assignments.slice(0, maxVisible);
-  const hidden = assignments.length - maxVisible;
+  const visible = assignments;
   const [dragOver, setDragOver] = useState(false);
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -134,11 +128,6 @@ const SlotHalf = ({
           />
         ))}
       </AnimatePresence>
-      {hidden > 0 && (
-        <span className="text-[9px] font-medium text-muted-foreground bg-muted px-1 py-0.5 rounded-full self-start">
-          +{hidden}
-        </span>
-      )}
     </div>
   );
 };
@@ -158,10 +147,7 @@ export const DayCell = ({
     onContextMenu?.(e);
   };
 
-  const allAssignments = data.assignments;
-  const needsPopover = allAssignments.length > config.maxVisible;
-
-  const cellContent = (
+  return (
     <div
       className={`flex flex-col transition-all duration-150 relative
                  ${isToday ? 'ring-1 ring-inset ring-primary/30' : ''}
@@ -247,43 +233,4 @@ export const DayCell = ({
       )}
     </div>
   );
-
-  if (needsPopover) {
-    return (
-      <Popover>
-        <PopoverTrigger asChild>
-          {cellContent}
-        </PopoverTrigger>
-        <PopoverContent
-          className="w-auto min-w-[240px] p-3"
-          side="right"
-          align="start"
-          sideOffset={8}
-        >
-          <div className="text-xs font-medium text-muted-foreground mb-2">
-            {new Date(date).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })}
-          </div>
-          <div className="space-y-2">
-            <div>
-              <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1">Matin</div>
-              {amAssignments.map((a, i) => (
-                <AssignmentChip key={a.id} assignment={a} index={i} compact={false} onRemove={() => onRemoveAssignment(a.id)} />
-              ))}
-              {amAssignments.length === 0 && <span className="text-[10px] text-muted-foreground">Aucune affectation</span>}
-            </div>
-            <div className="h-px bg-border" />
-            <div>
-              <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1">Après-midi</div>
-              {pmAssignments.map((a, i) => (
-                <AssignmentChip key={a.id} assignment={a} index={i} compact={false} onRemove={() => onRemoveAssignment(a.id)} />
-              ))}
-              {pmAssignments.length === 0 && <span className="text-[10px] text-muted-foreground">Aucune affectation</span>}
-            </div>
-          </div>
-        </PopoverContent>
-      </Popover>
-    );
-  }
-
-  return cellContent;
 };

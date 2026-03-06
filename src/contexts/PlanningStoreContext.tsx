@@ -197,7 +197,6 @@ export const PlanningStoreProvider = ({ children }: { children: ReactNode }) => 
   const [selectedTeamId, setSelectedTeamIdState] = useState<string>('');
 
   useEffect(() => {
-    if (!apiEnabled) return;
     if (subsidiaries.length === 0) return;
     const saved = {
       sub: localStorage.getItem('planning:subsidiaryId') ?? '',
@@ -214,7 +213,7 @@ export const PlanningStoreProvider = ({ children }: { children: ReactNode }) => 
     setSelectedSubsidiaryIdState(subId);
     setSelectedWorkshopIdState(wkId);
     setSelectedTeamIdState(tm?.id ?? '');
-  }, [apiEnabled, subsidiaries, workshops, teams]);
+  }, [subsidiaries, workshops, teams]);
 
   useEffect(() => { if (selectedSubsidiaryId) localStorage.setItem('planning:subsidiaryId', selectedSubsidiaryId); }, [selectedSubsidiaryId]);
   useEffect(() => { if (selectedWorkshopId) localStorage.setItem('planning:workshopId', selectedWorkshopId); }, [selectedWorkshopId]);
