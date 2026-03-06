@@ -163,6 +163,9 @@ for TYPE in app api; do
   done
 done
 
+# Rétablir les permissions d'exécution du script (perdues après git reset)
+chmod +x /opt/planning/scripts/deploy.sh
+
 log "✅ Déploiement terminé — version $(git rev-parse --short HEAD)"
 log "   Application accessible sur http://192.168.13.51"
 log "   💡 En cas de problème: ./scripts/deploy.sh --rollback"
