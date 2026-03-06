@@ -502,7 +502,7 @@ async function syncSalaries(
   codeMap: CodeEntrepriseMap,
 ) {
   try {
-    const rows = await pool.request().query<{
+    type SalarieRow = {
       'IdSalarié': string;
       'Nom salarié': string;
       'Prénom salarié'?: string;
@@ -515,12 +515,26 @@ async function syncSalaries(
       'Est actif'?: string;
       'Date embauche'?: Date;
       'Code salarié responsable'?: string;
-    }>(`SELECT
-        [IdSalarié], [Nom salarié], [Prénom salarié], [Code salarié],
-        [Code entreprise], [Matricule RH], [Service], [Qualification],
-        [Est intérimaire], [Est actif], [Date embauche],
-        [Code salarié responsable]
-      FROM [Salarié]`);
+    };
+
+    let rows: sql.IResult<SalarieRow>;
+    try {
+      rows = await pool.request().query<SalarieRow>(`SELECT
+          [IdSalarié], [Nom salarié], [Prénom salarié], [Code salarié],
+          [Code entreprise], [Matricule RH], [Service], [Qualification],
+          [Est intérimaire], [Est actif], [Date embauche],
+          [Code salarié responsable]
+        FROM [Salarié]`);
+    } catch (colErr: any) {
+      // Fallback: [Code entreprise] may not exist on some SQL Server instances
+      console.log(`[sync] Salarié: [Code entreprise] not available, retrying without it`);
+      rows = await pool.request().query<SalarieRow>(`SELECT
+          [IdSalarié], [Nom salarié], [Prénom salarié], [Code salarié],
+          [Matricule RH], [Service], [Qualification],
+          [Est intérimaire], [Est actif], [Date embauche],
+          [Code salarié responsable]
+        FROM [Salarié]`);
+    }
 
     console.log(`[sync] Salarié query returned ${rows.recordset.length} rows`);
 
