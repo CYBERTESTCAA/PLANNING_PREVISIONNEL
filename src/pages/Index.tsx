@@ -186,48 +186,24 @@ const Index = () => {
       </header>
 
       <main className="flex-1 px-5 py-4 space-y-4 overflow-y-auto">
-        {/* Row 1: Subsidiary selector + Sync */}
-        <div className="flex items-center justify-between gap-4">
-          {subsidiaries.length > 0 && (
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mr-1">Filiale</span>
-              {subsidiaries.map((sub) => {
-                const isSelected = selectedSubsidiaryId === sub.id;
-                return (
-                  <button
-                    key={sub.id}
-                    onClick={() => setSelectedSubsidiaryId(sub.id)}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-all
-                               ${isSelected
-                                 ? 'bg-primary text-primary-foreground border-primary shadow-sm'
-                                 : 'bg-card border-border text-foreground hover:border-primary/40 hover:bg-accent'}`}
-                  >
-                    <Building2 className="w-3 h-3 shrink-0" />
-                    {sub.name}
-                    {isSelected && <Check className="w-3 h-3 shrink-0" />}
-                  </button>
-                );
-              })}
-            </div>
-          )}
-          {isApiEnabled() && (
-            <div className="flex items-center gap-2 text-xs text-muted-foreground shrink-0">
-              <Clock className="w-3.5 h-3.5" />
-              {syncing && progress ? (
-                <span className="text-primary font-medium">{progress.percent}% — {progress.stepLabel}</span>
-              ) : syncStatus?.last ? (
-                <span>Sync : {(() => { const d = new Date(syncStatus.last!.finishedAt || syncStatus.last!.startedAt || ''); return isNaN(d.getTime()) ? '—' : d.toLocaleString('fr-FR'); })()}</span>
-              ) : (
-                <span>{syncStatus === null ? '…' : 'Pas de sync'}</span>
-              )}
-              <button onClick={triggerSync} disabled={syncing}
-                className="flex items-center gap-1.5 px-2.5 py-1 bg-secondary text-foreground text-xs rounded-lg hover:bg-secondary/80 transition-colors disabled:opacity-50">
-                <RefreshCw className={`w-3 h-3 ${syncing ? 'animate-spin' : ''}`} />
-                {syncing ? 'Sync…' : 'Sync'}
-              </button>
-            </div>
-          )}
-        </div>
+        {/* Row 1: Sync status (filiale selector moved to sidebar) */}
+        {isApiEnabled() && (
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <Clock className="w-3.5 h-3.5" />
+            {syncing && progress ? (
+              <span className="text-primary font-medium">{progress.percent}% — {progress.stepLabel}</span>
+            ) : syncStatus?.last ? (
+              <span>Sync : {(() => { const d = new Date(syncStatus.last!.finishedAt || syncStatus.last!.startedAt || ''); return isNaN(d.getTime()) ? '—' : d.toLocaleString('fr-FR'); })()}</span>
+            ) : (
+              <span>{syncStatus === null ? '…' : 'Pas de sync'}</span>
+            )}
+            <button onClick={triggerSync} disabled={syncing}
+              className="flex items-center gap-1.5 px-2.5 py-1 bg-secondary text-foreground text-xs rounded-lg hover:bg-secondary/80 transition-colors disabled:opacity-50">
+              <RefreshCw className={`w-3 h-3 ${syncing ? 'animate-spin' : ''}`} />
+              {syncing ? 'Sync…' : 'Sync'}
+            </button>
+          </div>
+        )}
 
         {/* Row 2: KPI Cards (compact) */}
         <div className="grid grid-cols-4 gap-3">

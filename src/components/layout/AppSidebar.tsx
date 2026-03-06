@@ -1,6 +1,8 @@
+import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { HardHat, BarChart3, Building2, Calendar, Users, Settings, Database, User, LogIn, LogOut, Shield, Home, FileText, MessageCircleQuestion, LayoutDashboard, Package } from 'lucide-react';
+import { HardHat, BarChart3, Building2, Calendar, Users, Settings, Database, User, LogIn, LogOut, Shield, Home, FileText, MessageCircleQuestion, LayoutDashboard, Package, Check, ChevronDown } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import { usePlanningStore } from '@/contexts/PlanningStoreContext';
 
 const NAV_ITEMS = [
   { to: '/', label: 'Dashboard', icon: Home },
@@ -31,6 +33,9 @@ const ADMIN_ITEMS = [
 export const AppSidebar = () => {
   const location = useLocation();
   const auth = useAuth();
+  const { subsidiaries, selectedSubsidiaryId, setSelectedSubsidiaryId } = usePlanningStore();
+  const [filialeOpen, setFilialeOpen] = useState(false);
+  const selectedSub = subsidiaries.find(s => s.id === selectedSubsidiaryId);
 
   const isActive = (path: string) => {
     if (path === '/') return location.pathname === '/';
@@ -40,7 +45,7 @@ export const AppSidebar = () => {
   return (
     <aside className="fixed left-0 top-0 bottom-0 w-56 bg-slate-900 text-white flex flex-col z-40">
       {/* Brand */}
-      <div className="px-4 py-5 border-b border-white/10">
+      <div className="px-4 pt-5 pb-3 border-b border-white/10">
         <Link to="/" className="flex items-center gap-3">
           <div className="w-9 h-9 rounded-lg bg-primary/20 flex items-center justify-center">
             <HardHat className="w-5 h-5 text-primary" />
@@ -50,6 +55,41 @@ export const AppSidebar = () => {
             <div className="text-[10px] text-slate-400 truncate">Groupe CAA</div>
           </div>
         </Link>
+
+        {/* Filiale selector — collapsed: shows selected only, click to expand */}
+        {subsidiaries.length > 0 && (
+          <div className="mt-3">
+            <button
+              onClick={() => setFilialeOpen(!filialeOpen)}
+              className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-[11px] font-medium bg-white/5 hover:bg-white/10 transition-colors text-slate-200"
+            >
+              <Building2 className="w-3 h-3 shrink-0 text-primary" />
+              <span className="truncate flex-1 text-left">{selectedSub ? selectedSub.name : 'Sélectionner une filiale'}</span>
+              <ChevronDown className={`w-3 h-3 shrink-0 text-slate-400 transition-transform duration-200 ${filialeOpen ? 'rotate-180' : ''}`} />
+            </button>
+            {filialeOpen && (
+              <div className="mt-1 space-y-0.5">
+                {subsidiaries.map(sub => {
+                  const active = selectedSubsidiaryId === sub.id;
+                  return (
+                    <button
+                      key={sub.id}
+                      onClick={() => { setSelectedSubsidiaryId(sub.id); setFilialeOpen(false); }}
+                      className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-[11px] font-medium transition-colors
+                        ${active
+                          ? 'bg-primary/20 text-primary'
+                          : 'text-slate-400 hover:bg-white/10 hover:text-slate-200'}`}
+                    >
+                      <Building2 className="w-3 h-3 shrink-0" />
+                      <span className="truncate flex-1 text-left">{sub.name}</span>
+                      {active && <Check className="w-3 h-3 shrink-0 text-primary" />}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Main nav */}
