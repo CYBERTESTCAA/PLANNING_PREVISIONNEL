@@ -188,7 +188,7 @@ export async function runFabricSync(prisma: PrismaClient, deltaOnly = false): Pr
     await syncClients(pool, prisma, result, codeMap);
 
     setProgress(3, TOTAL_STEPS, 'Affaires', 'Affaire → Affaires');
-    await syncAffaires(pool, prisma, result);
+    await syncAffaires(pool, prisma, result, codeMap);
 
     setProgress(4, TOTAL_STEPS, 'Salariés', 'Salarié → Employees');
     await syncSalaries(pool, prisma, result, codeMap);
@@ -343,6 +343,7 @@ async function syncEntreprises(
 }
 
 // ─── 2. Clients ───────────────────────────────────────────────────────────────
+// Uses [Commande client analyse] to map IdClient → IdEntreprise (clean, unique)
 async function syncClients(
   pool: sql.ConnectionPool,
   prisma: PrismaClient,
@@ -350,18 +351,32 @@ async function syncClients(
   codeMap: CodeEntrepriseMap,
 ) {
   try {
+    // Step 1: Build IdClient → IdEntreprise mapping from [Commande client analyse]
+    const clientEntMapping = await pool.request().query<{
+      IdClient: string;
+      IdEntreprise: string;
+    }>(`SELECT DISTINCT [IdClient], [IdEntreprise] FROM [Commande client analyse]
+        WHERE [IdClient] IS NOT NULL AND [IdEntreprise] IS NOT NULL`);
+
+    const clientIdToEntreprise: Record<string, string> = {};
+    for (const row of clientEntMapping.recordset) {
+      const idCli = row.IdClient?.trim();
+      const idEnt = row.IdEntreprise?.trim();
+      if (idCli && idEnt) clientIdToEntreprise[idCli] = idEnt;
+    }
+    console.log(`[sync] Built IdClient→IdEntreprise mapping: ${Object.keys(clientIdToEntreprise).length} clients mapped`);
+
+    // Step 2: Query [Client]
     const rows = await pool.request().query<{
       IdClient: string;
       'Code client': string;
       Client: string;
-      'Code entreprise'?: number;
       'Adresse 1'?: string;
       Ville?: string;
       'Code postal'?: string;
       'Téléphone 1'?: string;
       EMail?: string;
     }>(`SELECT [IdClient], [Code client], [Client],
-              [Code entreprise],
               [Adresse 1], [Ville], [Code postal],
               [Téléphone 1], [EMail]
         FROM [Client]`);
@@ -369,12 +384,14 @@ async function syncClients(
     const fallbackSubId = Object.values(codeMap)[0];
 
     for (const row of rows.recordset) {
-      const code = str(row['Code client']) || str(row.IdClient);
+      const idClient = row.IdClient?.trim();
+      const code = str(row['Code client']) || idClient;
       const name = str(row.Client);
       if (!code || !name) continue;
 
-      const codeEnt = row['Code entreprise'] != null ? String(row['Code entreprise']).trim() : undefined;
-      const subsidiaryId = (codeEnt && codeMap[codeEnt]) ?? fallbackSubId;
+      // Resolve via IdEntreprise from [Commande client analyse]
+      const idEntreprise = idClient ? clientIdToEntreprise[idClient] : undefined;
+      const subsidiaryId = (idEntreprise && codeMap[idEntreprise]) ?? fallbackSubId;
       if (!subsidiaryId) continue;
 
       await prisma.client.upsert({
@@ -406,17 +423,34 @@ async function syncClients(
 }
 
 // ─── 3. Affaires ──────────────────────────────────────────────────────────────
+// Uses [Commande client analyse] to map IdAffaire → IdEntreprise (clean, unique)
 async function syncAffaires(
   pool: sql.ConnectionPool,
   prisma: PrismaClient,
   result: SyncResult,
+  codeMap: CodeEntrepriseMap,
 ) {
   try {
+    // Step 1: Build IdAffaire → IdEntreprise mapping from [Commande client analyse]
+    const affaireEntMapping = await pool.request().query<{
+      IdAffaire: string;
+      IdEntreprise: string;
+    }>(`SELECT DISTINCT [IdAffaire], [IdEntreprise] FROM [Commande client analyse]
+        WHERE [IdAffaire] IS NOT NULL AND [IdEntreprise] IS NOT NULL`);
+
+    const affaireIdToEntreprise: Record<string, string> = {};
+    for (const row of affaireEntMapping.recordset) {
+      const idAff = row.IdAffaire?.trim();
+      const idEnt = row.IdEntreprise?.trim();
+      if (idAff && idEnt) affaireIdToEntreprise[idAff] = idEnt;
+    }
+    console.log(`[sync] Built IdAffaire→IdEntreprise mapping: ${Object.keys(affaireIdToEntreprise).length} affaires mapped`);
+
+    // Step 2: Query [Affaire]
     const rows = await pool.request().query<{
       IdAffaire: string;
       'Code affaire': string;
       Affaire: string;
-      'Code entreprise'?: number;
       'Code client'?: string;
       'Date création'?: Date;
       'Date accord'?: Date;
@@ -427,7 +461,7 @@ async function syncAffaires(
       'CA prévu'?: number;
       'Taux de réussite'?: number;
     }>(`SELECT [IdAffaire], [Code affaire], [Affaire],
-              [Code entreprise], [Code client],
+              [Code client],
               [Date création], [Date accord], [Date signature],
               [Code salarié commercial], [Code salarié technicien],
               [Situation dossier], [CA prévu], [Taux de réussite]
@@ -452,17 +486,22 @@ async function syncAffaires(
       const label = str(row.Affaire) || code;
       if (!code) continue;
 
+      const idAffaire = row.IdAffaire?.trim();
       const clientCode = str(row['Code client']);
       const clientId = clientCode ? clientByCode[clientCode] ?? null : null;
       const commercialCode = str(row['Code salarié commercial']);
       const technicienCode = str(row['Code salarié technicien']);
+
+      // Resolve subsidiary via IdEntreprise from [Commande client analyse]
+      const idEntreprise = idAffaire ? affaireIdToEntreprise[idAffaire] : undefined;
+      const subsidiaryCode = idEntreprise ?? null;
 
       await prisma.affaire.upsert({
         where: { code },
         update: {
           label: label!,
           clientId,
-          subsidiaryCode: row['Code entreprise'] != null ? String(row['Code entreprise']).trim() : null,
+          subsidiaryCode,
           status: str(row['Situation dossier']),
           dateCreation: toDate(row['Date création']),
           dateAccord: toDate(row['Date accord']),
@@ -476,7 +515,7 @@ async function syncAffaires(
           code,
           label: label!,
           clientId,
-          subsidiaryCode: row['Code entreprise'] != null ? String(row['Code entreprise']).trim() : null,
+          subsidiaryCode,
           status: str(row['Situation dossier']),
           dateCreation: toDate(row['Date création']),
           dateAccord: toDate(row['Date accord']),
@@ -495,6 +534,7 @@ async function syncAffaires(
 }
 
 // ─── 4. Salariés (enriched) ──────────────────────────────────────────────────
+// Uses [Dépense temps passé] to map IdSalarié → IdEntreprise (clean, unique)
 async function syncSalaries(
   pool: sql.ConnectionPool,
   prisma: PrismaClient,
@@ -502,12 +542,30 @@ async function syncSalaries(
   codeMap: CodeEntrepriseMap,
 ) {
   try {
-    type SalarieRow = {
+    // Step 1: Build IdSalarié → IdEntreprise mapping from [Dépense temps passé]
+    const entMapping = await pool.request().query<{
+      IdSalarié: string;
+      IdEntreprise: string;
+    }>(`SELECT DISTINCT [IdSalarié], [IdEntreprise] FROM [Dépense temps passé]
+        WHERE [IdSalarié] IS NOT NULL AND [IdEntreprise] IS NOT NULL`);
+
+    const salIdToEntreprise: Record<string, string> = {};
+    for (const row of entMapping.recordset) {
+      const idSal = row.IdSalarié?.trim();
+      const idEnt = row.IdEntreprise?.trim();
+      if (idSal && idEnt) {
+        // Keep the first one found (or overwrite — both are fine, most employees work in one entreprise)
+        salIdToEntreprise[idSal] = idEnt;
+      }
+    }
+    console.log(`[sync] Built IdSalarié→IdEntreprise mapping: ${Object.keys(salIdToEntreprise).length} employees mapped`);
+
+    // Step 2: Query [Salarié] (no need for [Code entreprise])
+    const rows = await pool.request().query<{
       'IdSalarié': string;
       'Nom salarié': string;
       'Prénom salarié'?: string;
       'Code salarié'?: string;
-      'Code entreprise'?: number;
       'Matricule RH'?: string;
       'Service'?: string;
       'Qualification'?: string;
@@ -515,26 +573,12 @@ async function syncSalaries(
       'Est actif'?: string;
       'Date embauche'?: Date;
       'Code salarié responsable'?: string;
-    };
-
-    let rows: sql.IResult<SalarieRow>;
-    try {
-      rows = await pool.request().query<SalarieRow>(`SELECT
-          [IdSalarié], [Nom salarié], [Prénom salarié], [Code salarié],
-          [Code entreprise], [Matricule RH], [Service], [Qualification],
-          [Est intérimaire], [Est actif], [Date embauche],
-          [Code salarié responsable]
-        FROM [Salarié]`);
-    } catch (colErr: any) {
-      // Fallback: [Code entreprise] may not exist on some SQL Server instances
-      console.log(`[sync] Salarié: [Code entreprise] not available, retrying without it`);
-      rows = await pool.request().query<SalarieRow>(`SELECT
-          [IdSalarié], [Nom salarié], [Prénom salarié], [Code salarié],
-          [Matricule RH], [Service], [Qualification],
-          [Est intérimaire], [Est actif], [Date embauche],
-          [Code salarié responsable]
-        FROM [Salarié]`);
-    }
+    }>(`SELECT
+        [IdSalarié], [Nom salarié], [Prénom salarié], [Code salarié],
+        [Matricule RH], [Service], [Qualification],
+        [Est intérimaire], [Est actif], [Date embauche],
+        [Code salarié responsable]
+      FROM [Salarié]`);
 
     console.log(`[sync] Salarié query returned ${rows.recordset.length} rows`);
 
@@ -551,7 +595,7 @@ async function syncSalaries(
       if (!workshopBySub[w.subsidiaryId]) workshopBySub[w.subsidiaryId] = w.id;
     }
 
-    const unmappedCodes = new Set<string>();
+    const unmappedSals = new Set<string>();
     const seenCodes = new Set<string>();
 
     // Build batch of employee data
@@ -567,14 +611,14 @@ async function syncSalaries(
       seenCodes.add(code);
 
       const firstName = row['Prénom salarié']?.trim() ?? '';
-      const codeEntreprise = row['Code entreprise'] != null ? String(row['Code entreprise']).trim() : undefined;
 
-      const subsidiaryId = (codeEntreprise && codeMap[codeEntreprise]) ?? fallbackSubId;
+      // Resolve subsidiary via IdEntreprise from [Dépense temps passé]
+      const idEntreprise = salIdToEntreprise[idSal];
+      const subsidiaryId = (idEntreprise && codeMap[idEntreprise]) ?? fallbackSubId;
 
-      if (codeEntreprise && !codeMap[codeEntreprise]) {
-        if (!unmappedCodes.has(codeEntreprise)) {
-          unmappedCodes.add(codeEntreprise);
-          console.log(`[sync] Warning: unmapped Code entreprise=${codeEntreprise} for employee ${code}`);
+      if (!idEntreprise || !codeMap[idEntreprise]) {
+        if (!unmappedSals.has(code)) {
+          unmappedSals.add(code);
         }
       }
 
@@ -583,7 +627,7 @@ async function syncSalaries(
       const isInterimStr = str(row['Est intérimaire']);
       const isInterim = isInterimStr ? (isInterimStr.toLowerCase() === 'oui' || isInterimStr === '1') : false;
 
-      const empData = {
+      batch.push({
         code, lastName, firstName, isActive,
         matriculeRH: str(row['Matricule RH']),
         service: str(row['Service']),
@@ -591,23 +635,9 @@ async function syncSalaries(
         isInterim,
         hireDate: toDate(row['Date embauche']),
         managerCode: str(row['Code salarié responsable']),
-      };
-
-      batch.push({
-        ...empData,
         subsidiaryId,
         workshopId: null,
       });
-
-      // Code entreprise=1 → duplicate into 1SUISSE so they're visible in both
-      if (codeEntreprise === '1' && codeMap['1SUISSE'] && codeMap['1SUISSE'] !== subsidiaryId) {
-        const suisseId = codeMap['1SUISSE'];
-        batch.push({
-          ...empData,
-          subsidiaryId: suisseId,
-          workshopId: null,
-        });
-      }
     }
 
     // Upsert employees — PRESERVES assignments, absences, and workshop assignments
@@ -647,7 +677,7 @@ async function syncSalaries(
     }
     result.employees = upserted;
 
-    console.log(`[sync] syncSalaries: ${upserted} employees upserted, unmapped=[${[...unmappedCodes].join(',')}]`);
+    console.log(`[sync] syncSalaries: ${upserted} employees upserted, unmapped=[${[...unmappedSals].join(',')}]`);
   } catch (err: any) {
     result.errors.push(`syncSalaries: ${err.message}`);
     console.error(`[sync] syncSalaries ERROR:`, err.message);

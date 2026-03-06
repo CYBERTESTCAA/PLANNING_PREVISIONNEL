@@ -93,6 +93,62 @@ export async function syncRoutes(server: FastifyInstance, prisma: PrismaClient) 
     }
   });
 
+  // GET /sync/verify — vérifier la distribution des données par filiale
+  server.get('/sync/verify', async () => {
+    const subsidiaries = await prisma.subsidiary.findMany({ orderBy: { code: 'asc' } });
+    const workshops = await prisma.workshop.findMany();
+    const employees = await prisma.employee.findMany({ select: { id: true, subsidiaryId: true, isActive: true } });
+    const projects = await prisma.project.findMany({ select: { id: true, workshopId: true, status: true } });
+    const clients = await prisma.client.findMany({ select: { id: true, subsidiaryId: true } });
+    const affaires = await prisma.affaire.findMany({ select: { id: true, subsidiaryCode: true } });
+
+    // Build workshop → subsidiary mapping
+    const workshopToSub: Record<string, string> = {};
+    for (const w of workshops) workshopToSub[w.id] = w.subsidiaryId;
+
+    const result = subsidiaries.map(sub => {
+      const subWorkshops = workshops.filter(w => w.subsidiaryId === sub.id);
+      const subWorkshopIds = new Set(subWorkshops.map(w => w.id));
+
+      const subEmployees = employees.filter(e => e.subsidiaryId === sub.id);
+      const subProjects = projects.filter(p => subWorkshopIds.has(p.workshopId));
+      const subClients = clients.filter(c => c.subsidiaryId === sub.id);
+      const subAffaires = affaires.filter(a => a.subsidiaryCode === sub.code);
+
+      return {
+        code: sub.code,
+        name: sub.name,
+        id: sub.id,
+        counts: {
+          workshops: subWorkshops.length,
+          employees: subEmployees.length,
+          employeesActive: subEmployees.filter(e => e.isActive).length,
+          projects: subProjects.length,
+          clients: subClients.length,
+          affaires: subAffaires.length,
+        },
+      };
+    });
+
+    // Also count orphans (not linked to any known subsidiary)
+    const allSubIds = new Set(subsidiaries.map(s => s.id));
+    const allWorkshopIds = new Set(workshops.map(w => w.id));
+    const orphanEmployees = employees.filter(e => !allSubIds.has(e.subsidiaryId)).length;
+    const orphanProjects = projects.filter(p => !allWorkshopIds.has(p.workshopId)).length;
+    const orphanClients = clients.filter(c => !allSubIds.has(c.subsidiaryId)).length;
+
+    return {
+      subsidiaries: result,
+      totals: {
+        employees: employees.length,
+        projects: projects.length,
+        clients: clients.length,
+        affaires: affaires.length,
+      },
+      orphans: { employees: orphanEmployees, projects: orphanProjects, clients: orphanClients },
+    };
+  });
+
   // POST /sync/cleanup — supprimer les filiales dupliquées et remettre à zéro les données
   // Les 5 filiales actives : 9MAR, 5MAR, 14STBARTH, 1GUA, 1SUISSE
   server.post('/sync/cleanup', async (_request, reply) => {
