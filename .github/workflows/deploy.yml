@@ -28,6 +28,7 @@ jobs:
       - name: Install & build API
         run: |
           npm install -w api
+          npx -w api prisma generate
           npm run build -w api
 
       - name: Upload artifacts to server
